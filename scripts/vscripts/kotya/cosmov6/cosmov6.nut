@@ -1,0 +1,9896 @@
+::MainScript <- self;
+::MapName <- GetMapName();
+::ScriptVersion <- "21.04.2023 - 21:43";
+
+Stage <- -1;
+WARMUP_TIME <- 60.0;
+
+::ITEM_GLOW <- true; 			// set false to disable this
+::MAPPER_ENT_FIRE <- true; 		// set false to disable this
+::ENT_WATCH_ENABLE <- true; 	// set false to disable this(change entwatch config!)
+::ENT_WATCH_TEAM <- false; 		// set false to disable this
+
+::COLOR_ENABLE <- true; 		// set false to disable this
+::AUTO_RETRY_ENABLE <- true; 	// set false to disable this
+
+::WAFFEL_CAR_ENABLE <- true;	// set false to disable this
+::BHOP_ENABLE <- false; 		// set false to disable this
+
+::DODJE_ENABLE <- false;
+
+::DisableHudHint <- true;
+
+::CLASSIC_MOD <- false;
+
+::RED_CHEST_RECORD <- 0.00;
+::RED_CHEST_RECORD_CLASS <- null;
+::GREEN_CHEST_RECORD <- 0.00;
+::GREEN_CHEST_RECORD_CLASS <- null;
+
+::EVENT_2XMONEY <- false;
+::EVENT_EXTRAITEMS <- false;
+::EVENT_EXTRAITEMS_COUNT <- [1, 2];
+
+::EVENT_BLACKFRIDAY <- false;
+::EVENT_BLACKFRIDAY_COUNT <- 15;
+
+::EVENT_EXTRACHEST <- false;
+::EVENT_EXTRACHEST_COUNT <- [2, 4];
+
+::g_bBossFight <- false;
+::g_hFadeItem <- null;
+
+::STARTMONEY <- 50;
+
+function MapStart()
+{
+	Round_Start_Time = Time();
+
+	g_hFadeItem = Entities.CreateByClassname("env_fade");
+	g_hFadeItem.__KeyValueFromString("duration", "0.5");
+	g_hFadeItem.__KeyValueFromString("holdtime", "0.5");
+	g_hFadeItem.__KeyValueFromInt("renderamt", 255);
+	g_hFadeItem.__KeyValueFromInt("spawnflags", 7);
+	g_hFadeItem.__KeyValueFromString("targetname", "7");
+	g_hFadeItem.__KeyValueFromVector("rendercolor", Vector(100, 255, 100));
+
+	g_bBossFight = false;
+
+	if(client_ent == null || client_ent != null && !client_ent.IsValid())
+	{
+		client_ent = Entities.FindByClassname(null, "point_clientcommand");
+		if(client_ent == null){client_ent = Entities.CreateByClassname("point_clientcommand");}
+	}
+	if(eventjump == null || eventjump != null && !eventjump.IsValid())
+	{
+		eventjump = Entities.FindByName(null, "pl_jump");
+	}
+	if(eventdeath == null || eventdeath != null && !eventdeath.IsValid())
+	{
+		eventdeath = Entities.FindByName(null, "pl_death");
+	}
+	if(eventhurt == null || eventhurt != null && !eventhurt.IsValid())
+	{
+		eventhurt = Entities.FindByName(null, "pl_hurt");
+	}
+	if(SpeedMod == null || SpeedMod != null && !SpeedMod.IsValid())
+	{
+		SpeedMod = Entities.FindByName(null, "speedMod");
+	}
+	if(eventinfo == null || eventinfo != null && !eventinfo.IsValid())
+	{
+		eventinfo = Entities.FindByName(null, "pl_ginfo");
+	}
+	if(eventdisconnect == null || eventdisconnect != null && !eventdisconnect.IsValid())
+	{
+		eventdisconnect = Entities.FindByName(null, "pl_disconnect");
+	}
+	if(eventproxy == null || eventproxy != null && !eventproxy.IsValid())
+	{
+		eventproxy = Entities.FindByClassname(null, "info_game_event_proxy");
+	}
+	if(g_zone == null || g_zone != null && !g_zone.IsValid())
+	{
+		g_zone = Entities.FindByName(null, "check_players");
+	}
+	if(ItemText == null || ItemText != null && !ItemText.IsValid())
+	{
+		ItemText = Entities.FindByName(null, "ItemText");
+	}
+	if(ShopHud == null || ShopHud != null && !ShopHud.IsValid())
+	{
+		ShopHud = Entities.FindByName(null, "hud_shop");
+	}
+	if(PlayerText == null || PlayerText != null && !PlayerText.IsValid())
+	{
+		PlayerText = Entities.FindByName(null, "playerText");
+	}
+	if(CreditsText == null || CreditsText != null && !CreditsText.IsValid())
+	{
+		CreditsText = Entities.FindByName(null, "Credits_Game_Text");
+	}
+
+	once_check = true;
+	LoopPlayerCheck();
+
+	//EntFire("map_tone", "FireUser4", "", 0);
+	if (Stage > 3)
+	{
+		//EntFire("map_tone", "SetBloomScale", "2", 0.1);
+		//EntFire("map_tone", "SetAutoExposureMax", "2.5", 0.1);
+		//EntFire("map_tone", "SetAutoExposureMin", "0.9", 0.1);
+	}
+
+	self.PrecacheModel("models/kmodels/cosmo/props/cs_office/crates_indoor.mdl");
+	FastFix();
+
+	//Bhop_Toggle();
+	if(Stage == -1)
+	{
+		Precache();
+		SetSettingServer();
+		AdminSetStage(4);
+	}
+	else if(Stage == 0)
+	{
+		Warmup_TICK();
+	}
+	else
+	{
+		StartVote();
+		ShowItems();
+		PrintPerksAll();
+		ShowCredits();
+		RotateSkin();
+		ToggleParticles();
+
+		if (CLASSIC_MOD)
+		{
+			EntFire("cmd", "Command", "say **经典设置**", 2);
+		}
+		else
+		{
+			EntFire("cmd", "Command", "say **默认设置**", 2);
+		}
+
+		if (!CLASSIC_MOD)
+		{
+			RandomEvent();
+		}
+		else
+		{
+			EntFire("kojima*", "Kill", "", 0, null);
+
+			EntFire("shop_perk*", "Kill", "", 0, null);
+
+			EntFire("shop_item_particle*", "Kill", "", 0, null);
+
+			EntFire("shop_item_bio", "Kill", "", 0, null);
+			EntFire("shop_item_earth", "Kill", "", 0, null);
+			EntFire("shop_item_electro", "Kill", "", 0, null);
+			EntFire("shop_item_fire", "Kill", "", 0, null);
+			EntFire("shop_item_gravity", "Kill", "", 0, null);
+			EntFire("shop_item_heal", "Kill", "", 0, null);
+			EntFire("shop_item_ice", "Kill", "", 0, null);
+			EntFire("shop_item_poison", "Kill", "", 0, null);
+			EntFire("shop_item_summon", "Kill", "", 0, null);
+			EntFire("shop_item_wind", "Kill", "", 0, null);
+			EntFire("shop_item_ultimate", "Kill", "", 0, null);
+
+			EntFire("info_item_bio", "Kill", "", 0, null);
+			EntFire("info_item_earth", "Kill", "", 0, null);
+			EntFire("info_item_electro", "Kill", "", 0, null);
+			EntFire("info_item_fire", "Kill", "", 0, null);
+			EntFire("info_item_gravity", "Kill", "", 0, null);
+			EntFire("info_item_heal", "Kill", "", 0, null);
+			EntFire("info_item_ice", "Kill", "", 0, null);
+			EntFire("info_item_poison", "Kill", "", 0, null);
+			EntFire("info_item_summon", "Kill", "", 0, null);
+			EntFire("info_item_wind", "Kill", "", 0, null);
+			EntFire("info_item_ultimate", "Kill", "", 0, null);
+
+			EntFire("shop_stock", "Kill", "", 0, null);
+			EntFire("shop_reroll", "Kill", "", 0, null);
+			EntFire("shop_stock", "Kill", "", 0, null);
+		}
+
+		EntFire("Start_tp", "FireUser1", "", 3);
+		EntFire("shop_travel_trigger", "FireUser1", "", 0);
+
+		EntFire("item_temp_mike", "ForceSpawn", "", 0);
+		EntFire("item_temp_yuffie", "AddOutPut", "origin 4286 -3794 653", 0.5);
+		EntFire("item_temp_yuffie", "ForceSpawn", "", 1);
+
+		EntFire("Spawn_Lift", "Open", "", 0);
+		EntFire("Spawn_Lift1", "Open", "", 0);
+
+
+		EntFireByHandle(self, "RunScriptCode", "NewStageGiveMoney();", 0.5, null, null);
+		if(Stage == 1)//normal
+		{
+			EntFire("Credits_Game_Text", "Display", "", 10);
+			EntFire("Credits_Game_Text", "AddOutput", "message 正常模式", 9.95);
+			EntFire("cmd", "Command", "say **正常模式**", 4);
+
+			EntFire("Map_Normal_Temp", "ForceSpawn", "", 0);
+
+			EntFire("Nigger", "AddOutPut", "origin -2181 -972 1187", 0);
+			EntFire("Nigger", "AddOutPut", "angles -90 261 0", 0)
+			EntFire("Nigger", "SetAnimation", "chair_idle", 0);
+			EntFire("Nigger", "SetDefaultAnimation", "chair_idle", 0);
+			EntFire("Hold5_Button", "Unlock", "", 0);
+			EntFire("Hold5_Button1", "Unlock", "", 0);
+
+			SendToConsoleServerPS("zr_infect_mzombie_respawn 1");
+			SendToConsoleServerPS("zr_infect_mzombie_ratio 12");
+
+			OpenSpawn(25);
+
+			local text;
+			text = "看来上次与神罗的遭遇重创了我们的船";
+			ServerChat(RedX_pref + text, 10.00);
+
+			text = "我们能到达这里真是一个奇迹";
+			ServerChat(RedX_pref + text, 15.00);
+
+			text = "顺便问一下，你怎么知道沙漠里有一整座城镇?";
+			ServerChat(Tifa_pref + text, 20.00);
+
+			text = "我的村庄离这个镇不远";
+			ServerChat(RedX_pref + text, 25.00);
+
+			text = "在等待船修好前我们去看看吧";
+			ServerChat(RedX_pref + text, 30.00);
+
+			text = "好吧，我不介意在克劳德和其他人修船的时候出去走走";
+			ServerChat(Tifa_pref + text, 35.00);
+
+			text = "我很惊讶神罗竟然没有控制这个地方";
+			ServerChat(Tifa_pref + text, 40.00);
+
+			text = "他们认为这个地方不值得他们费心";
+			ServerChat(RedX_pref + text, 45.00);
+
+			text = "当我被俘虏的时候，我发现离这里不远有一个军事基地";
+			ServerChat(RedX_pref + text, 50.00);
+
+			text = "所以最好不要太引人注目";
+			ServerChat(RedX_pref + text, 55.00);
+		}
+		else if(Stage == 2)//hard
+		{
+			EntFire("Credits_Game_Text", "Display", "", 10);
+			EntFire("Credits_Game_Text", "AddOutput", "message 困难模式", 9.95);
+			EntFire("Hold5_Button1", "Unlock", "", 0);
+			EntFire("Hard_Mine_Button", "Unlock", "", 0);
+
+			EntFire("cmd", "Command", "say **困难模式**", 4);
+			EntFire("temp_mine", "forcespawn", "", 20);
+
+			SendToConsoleServerPS("zr_infect_mzombie_respawn 1");
+			SendToConsoleServerPS("zr_infect_mzombie_ratio 10");
+
+			OpenSpawn(25);
+
+			local text;
+			text = "我们的敌人很强大，拿上你们需要的东西，让我们出发吧";
+			ServerChat(RedX_pref + text, 10.00);
+
+			text = "所以你父亲和基纳塔克打过架?";
+			ServerChat(Tifa_pref + text, 15.00);
+
+			text = "是的，100年前，宇宙峡谷看起来和现在完全不一样";
+			ServerChat(RedX_pref + text, 20.00);
+
+			text = "我想了解更多，但现在，我们需要集中精力完成这个任务";
+			ServerChat(Tifa_pref + text, 25.00);
+
+			text = "这次不要再让基纳塔克逃跑了.";
+			ServerChat(OldMan_pref + text, 30.00);
+
+			text = "这次他逃不掉了.";
+			ServerChat(RedX_pref + text, 35.00);
+
+			text = "小心点，当地有传言说有人看到了 Kaktuara.";
+			ServerChat(OldMan_pref + text, 40.00);
+
+			text = "我不太喜欢鬼魂和仙人掌";
+			ServerChat(Tifa_pref + text, 45.00);
+		}
+		else if(Stage == 3)//zm
+		{
+			local Nuke_Time = 215;
+			EntFire("kojima*", "Kill", "", 0, null);
+
+			EntFire("Credits_Game_Text", "Display", "", 10);
+			EntFire("Credits_Game_Text", "AddOutput", "message ZM模式", 9.95);
+			EntFire("cmd", "Command", "say **ZM模式**", 4);
+
+			EntFire("City_Gate_Open", "Kill", "", 0);
+			EntFire("City_Gate", "Open", "", 0);
+
+			EntFire("Cosmo_Bar_Door", "Kill", "", 0);
+			EntFire("Cosmo_Bar_Glasses", "Kill", "", 0);
+			EntFire("Hold2_Door", "Open", "", 0);
+
+			EntFire("Hold1*", "Kill", "", 0);
+			EntFire("Hold2_Trigger", "Kill", "", 0);
+
+			EntFire("Map_ZM_Temp", "ForceSpawn", "", 0);
+
+			EntFire("City_Gate", "Close", "", 120.00);
+			EntFire("zm_travel_trigger", "kill", "", 145.00);
+			EntFire("map_brush", "RunScriptCode", "Trigger_ZM_Tp();", 149.00);
+			EntFire("music01", "RunScriptCode", "SetMusic(Music_ZM_2);", 160.00);
+			EntFire("City_Gate", "Open", "", 154.00);
+			EntFire("ZM_End_Chek", "Enable", "", 215.0);
+			EntFire("ZM_End_Chek", "touchtest", "", 215.1);
+
+			local text1;
+			for(local i = 30; i <= Nuke_Time; i++)
+			{
+				text1 = "核爆倒计时 : " + (Nuke_Time - i) + " 秒";
+				ShowCreditsText(text1, i);
+			}
+
+			local text;
+			text = "干得好，赤红13，你父亲会为你骄傲的.";
+			ServerChat(OldMan_pref + text, 10.00);
+
+			text = "没有你我赢不了这场战斗，所以这是我们的胜利.";
+			ServerChat(RedX_pref + text, 15.00);
+
+			text = "我没想到我们能活下来.";
+			ServerChat(Tifa_pref + text, 20.00);
+
+			text = "你的船已经准备好了，顺便说一句，我也知道你在跟踪萨菲罗斯";
+			ServerChat(OldMan_pref + text, 25.00);
+
+			text = "所以我有些消息要告诉你";
+			ServerChat(OldMan_pref + text, 30.00);
+
+			text = "我的线人告诉我有些人在一座古老的废弃寺庙附近看到了他.";
+			ServerChat(OldMan_pref + text, 35.00);
+
+			text = "古人的庙宇... 路并不近，但是谢谢你的信息";
+			ServerChat(RedX_pref + text, 40.00);
+
+			text = "还有，我的线人告诉我神罗正在北方集结军队, 路法斯正在集结他们.";
+			ServerChat(OldMan_pref + text, 45.00);
+
+			text = "我想知道北方有什么，因为他们把整个军队都派到那里去了.";
+			ServerChat(Tifa_pref + text, 50.00);
+
+			text = "我们稍后再处理路法斯.更重要的是我们要找到萨菲罗斯并逃离雷诺的跟踪.";
+			ServerChat(RedX_pref + text, 55.00);
+
+			text = "我会为你的成功祈祷";
+			ServerChat(OldMan_pref + text, 60.00);
+
+			text = "跑到飞艇上并守住它.";
+			ServerChat(Chat_pref + text, 149.00);
+
+			SendToConsoleServerPS("zr_infect_mzombie_respawn 0");
+			SendToConsoleServerPS("zr_infect_mzombie_ratio 6");
+
+			OpenSpawn(5);
+		}
+		else if(Stage == 4)//extreme
+		{
+			EntFire("sky_fire", "Start", "", 0.5);
+
+			EntFire("Credits_Game_Text", "Display", "", 10);
+			EntFire("Credits_Game_Text", "AddOutput", "message 极限模式", 9.95);
+			EntFire("cmd", "Command", "say **极限模式**", 4);
+			EntFire("Hold5_Button", "Unlock", "", 0);
+			EntFire("Hold5_Button1", "Unlock", "", 0);
+			EntFire("lvl3_Crate", "kill", "", 0);
+
+			EntFire("stage4_final_practice", "Trigger", "", 2);
+
+			SendToConsoleServerPS("zr_infect_mzombie_respawn 1");
+			SendToConsoleServerPS("zr_infect_mzombie_ratio 6");
+
+			local text;
+			text = "幻觉?这怎么可能?";
+			ServerChat(Tifa_pref + text, 10.00);
+
+			text = "基纳塔克是个很厉害的巫师，我们一直都低估了他";
+			ServerChat(OldMan_pref + text, 15.00);
+
+			text = "我会一劳永逸地结束这一切，我不会让他毁了我的村庄.";
+			ServerChat(RedX_pref + text, 20.00);
+
+			text = "神罗的侦察直升机会发现这场大火，我们得抓紧时间了.";
+			ServerChat(Tifa_pref + text, 25.00);
+
+			text = "如果雷诺跟着他们，我们会有大麻烦的.";
+			ServerChat(Tifa_pref + text, 30.00);
+
+			text = "然后他们就能尝到本地石头的味道了.";
+			ServerChat(RedX_pref + text, 35.00);
+
+			OpenSpawn(25);
+		}
+		else if(Stage == 5)//Inferno
+		{
+			EntFire("Temp_Inferno", "ForceSpawn", "", 2);
+			EntFire("Inferno_Mine_Door_Button", "Unlock", "", 0);
+			EntFire("Hold5_Button", "Unlock", "", 0);
+			EntFire("lvl3_Crate", "kill", "", 0);
+			EntFire("sky_fire", "Start", "", 0.5);
+
+			EntFire("Credits_Game_Text", "Display", "", 10);
+			EntFire("Credits_Game_Text", "AddOutput", "message 地狱模式", 9.95);
+			EntFire("cmd", "Command", "say **地狱模式**", 4);
+			
+			EntFire("stage5_final_practice", "Trigger", "", 2);
+
+			SendToConsoleServerPS("zr_infect_mzombie_respawn 1");
+			SendToConsoleServerPS("zr_infect_mzombie_ratio 4");
+
+			OpenSpawn(25);
+		}
+	}
+	CountStage();
+	//EntFireByHandle(self, "RunScriptCode", "SavePos();", 5, null, null);
+}
+
+Vote_Players <- [];
+Vote_Time <- 10;
+Vote_NeedPlayers <- 0.65;
+
+function StartVote()
+{
+	EntFire("Classic_Hbox", "SetDamageFilter", "", 0, null);
+	Vote_Players.clear();
+
+	Vote_Tick();
+
+	local i;
+	for (i = 0; i < Vote_Time; i++)
+	{
+		EntFireByHandle(self, "RunScriptCode", "Vote_Tick()", 5.00 + i, null, null);
+	}
+	EntFireByHandle(self, "RunScriptCode", "Vote_End()", 6.00 + i, null, null);
+}
+
+function Vote_Add()
+{
+	foreach (player in Vote_Players)
+	{
+		if (player == activator)
+		{
+			return;
+		}
+	}
+
+	Vote_Players.push(activator);
+}
+
+function Vote_Tick()
+{
+	local TottalPlayers = (PLAYERS.len() * Vote_NeedPlayers).tointeger();
+	local VotePlayers = Vote_Players.len();
+
+	local szText = "";
+	if (CLASSIC_MOD)
+	{
+		szText = format("Default Settings %i/%i", VotePlayers, TottalPlayers);
+	}
+	else
+	{
+		szText = format("Classic Settings %i/%i", VotePlayers, TottalPlayers);
+	}
+	EntFire("Classic_text", "AddOutput", "message " + szText, 0, null);
+}
+
+function Vote_End()
+{
+	local TottalPlayers = (PLAYERS.len() * Vote_NeedPlayers).tointeger();
+	local VotePlayers = Vote_Players.len();
+	if (VotePlayers == 0)
+	{
+		return;
+	}
+	if (VotePlayers >= TottalPlayers)
+	{
+		CLASSIC_MOD = !CLASSIC_MOD;
+		local g_round = Entities.FindByName(null, "round_end");
+		if(g_round != null && g_round.IsValid())
+		{
+			EntFireByHandle(g_round, "EndRound_Draw", "3", 0, null, null);
+		}
+	}
+	EntFire("Classic_prop", "FireUser1", "", 0, null);
+}
+
+function Warmup_TICK()
+{
+	local text;
+	WARMUP_TIME--;
+	if (WARMUP_TIME < 1)
+	{
+		text = "地图开始";
+		AdminSetStage(1);
+		Map_Start_Time = Time() + 6.00;
+	}
+	else
+	{
+		text = "热身时间 : " + WARMUP_TIME
+		EntFireByHandle(self, "RunScriptCode", "Warmup_TICK();", 1.00, null, null);
+	}
+
+	ShowCreditsText(text);
+
+	if(PLAYERS.len() > 0)
+	{
+		foreach(p in PLAYERS)
+		{
+			if(p.handle != null && p.handle.IsValid())
+			{
+				ShowShopText(p.handle, text);
+			}
+		}
+	}
+}
+
+Spot_ID <- 0;
+Spot_Array <- [];
+
+for(local y = -11292;y <= -9508;y += 88)
+{
+	Spot_Array.push(Vector(8044, y, -176));
+	Spot_Array.push(Vector(7956, y, -176));
+}
+
+function GetSpot()
+{
+	return Spot_Array[((Spot_ID++ >= Spot_Array.len() - 1) ? (Spot_ID = 0) : Spot_ID)];
+}
+
+
+function Travel_To_Shop(count = 1)
+{
+	Shop_TP_Count -= count;
+	if(Shop_TP_Count < 1)
+		EntFire("spawntoshop_travel_trigger", "Kill", "", 0, null);
+}
+
+Shop_TP_Count <- 0;
+Shop_TP_CountB <- 10;
+
+function MapReset()
+{
+	if (!BHOP_ENABLE)
+	{
+		SendToConsoleServerPS("sv_enablebunnyhopping 0");
+	}
+	else
+	{
+		SendToConsoleServerPS("sv_enablebunnyhopping 1");
+	}
+
+	DisableHudHint = true;
+	EntFireByHandle(self, "RunScriptCode", "DisableHudHint = false;", 30, null, null);
+
+	ITEM_OWNER.clear();
+	Chat_Buffer.clear();
+	EndPropRotate.clear();
+
+	Active_Boss = null;
+
+	item_ammo_count = item_ammo_countB;
+	item_potion_count = item_potion_countB;
+	item_phoenix_count = item_phoenix_countB;
+
+	if(item_ammo_count > 0)
+		EntFire("info_glow_ammo", "SetGlowEnabled", "", 0, null);
+	if(item_potion_count > 0)
+		EntFire("info_glow_potion", "SetGlowEnabled", "", 0, null);
+	if(item_phoenix_count > 0)
+		EntFire("info_glow_phoenix", "SetGlowEnabled", "", 0, null);
+
+	EntFire("Camera_old", "RunScriptCode", "SetOverLay()", 0);
+
+	Shop_TP_Count = Shop_TP_CountB;
+
+	EntFireByHandle(self, "RunScriptCode", "MapFullRestart();", 1.5, null, null);
+}
+
+function SpawnTrigger_Touch()
+{
+	if (Round_Start_Time + 30 < Time())
+	{
+		return;
+	}
+	if (activator == null ||
+	!activator.IsValid() ||
+	(activator.GetTeam() == 2 &&
+	activator.GetHealth() > 300))
+	{
+		return;
+	}
+	local p = GetPlayerClassByHandle(activator);
+	if (p == null)
+	{
+		return;
+	}
+
+	local hp = 100 + p.perkhp_hm_lvl * perkhp_hm_hpperlvl;
+	if (CLASSIC_MOD)
+	{
+		hp = 300;
+	}
+	activator.SetHealth(hp);
+	activator.SetMaxHealth(hp);
+
+	EntFireByHandle(SpeedMod, "ModifySpeed", "1.0", 0, activator, activator);
+	// EntFireByHandle(handle, "AddOutput", "rendermode 0", 0, handle, handle);
+	// EntFireByHandle(handle, "AddOutput", "renderamt 255", 0.05, handle, handle);
+	activator.__KeyValueFromVector("color", Vector(255, 255, 255));
+	activator.__KeyValueFromInt("rendermode", 0);
+	activator.__KeyValueFromInt("renderamt", 255);
+
+	if(p.knife != null)
+	{
+		Entities.FindByName(null, "pl_say").GetScriptScope().Knife(p.userid, p.knife);
+	}
+
+	if(WAFFEL_CAR_ENABLE)
+	{
+		if(!p.block_waffel)
+			CheckForCar(p);
+	}
+
+	if(p.ctskin != null)
+	{
+		activator.SetModel(p.ctskin);
+	}
+	// if(p.vip)
+	// {
+	//    CreatePet(activator,1);
+	// }
+	if(DODJE_ENABLE)
+	{
+		if(IsPidaras(p.steamid))
+		{
+			if(RandomInt(0,4) == 4)
+			{
+				local message = "#SFUI_FileVerification_BlockedFiles_WithParam";
+				if(PIDARAS_COUNT == 1)
+					message = "#SFUI_QMM_ERROR_VacBanned";
+
+				EntFireByHandle(client_ent, "Command", "disconnect " + message, RandomFloat(0.0,1.0), activator, null);
+
+				PIDARAS_COUNT++;
+			}
+		}
+	}
+}
+
+function MapFullRestart()
+{
+	local best_infects = 1;
+	local best_infects_class = null;
+	if(PLAYERS.len() > 0)
+	{
+		foreach(p in PLAYERS)
+		{
+			p.otm = p.perksteal_lvl;
+
+			p.poison_status = false;
+			p.invalid = false;
+			p.setPerks = false;
+			p.pet = null;
+			p.mike = null;
+			p.yuffi = null;
+			p.slow = false;
+			p.antidebuff = false;
+			p.petstatus = null;
+
+			if(p.infect > best_infects)
+			{
+				best_infects = p.infect;
+				best_infects_class = p;
+			}
+
+			p.infect = 0;
+			p.shoots = 0;
+
+			p.GetNewStock();
+
+			//teleportitem
+			// p.lastang.clear();
+			// p.lastpos.clear();
+			// p.teleporting = false;
+
+			p.speed_default = 1.0;
+			p.speed = 1.0;
+		}
+	}
+
+	local handle;
+	if(best_infects_class != null)
+	{
+		handle = best_infects_class.handle;
+		if(handle != null && handle.IsValid() && handle.GetHealth() > 0)
+		{
+			EntFire("mask_manager", "RunScriptCode", "SetMask(9, false)", 0, handle)
+		}
+	}
+	if(GREEN_CHEST_RECORD_CLASS != null)
+	{
+		handle = GREEN_CHEST_RECORD_CLASS.handle;
+		if(handle != null && handle.IsValid() && handle.GetHealth() > 0)
+		{
+			EntFire("mask_manager", "RunScriptCode", "SetMask(8, false)", 0, handle)
+		}
+	}
+	if(RED_CHEST_RECORD_CLASS != null)
+	{
+		handle = RED_CHEST_RECORD_CLASS.handle;
+		if(handle != null && handle.IsValid() && handle.GetHealth() > 0)
+		{
+			EntFire("mask_manager", "RunScriptCode", "SetMask(8, false)", 0, handle)
+		}
+	}
+
+	handle = GetPlayerClassByMoney();
+
+	if(handle != null)
+	{
+		handle = handle.handle;
+		if(handle != null && handle.IsValid() && handle.GetHealth() > 0)
+		{
+			EntFire("mask_manager", "RunScriptCode", "SetMask(7, false)", 0, handle)
+		}
+	}
+
+}
+
+function test1(ID)
+{
+	local waffel_car = Entities.FindByName(null, "waffel_controller");
+	local button = waffel_car.GetScriptScope().GetClassByInvalid(activator).driverbutton;
+	local driver = PLAYERS[ID];
+	EntFireByHandle(button, "Press", "", 0.00, driver.handle, driver.handle);
+}
+
+function CheckForCar(p)
+{
+	local player_class = p;
+	foreach(a in INVALID_STEAM_ID)
+	{
+		local steamid = split(a," ");
+		if(player_class.steamid == steamid[0])
+		{
+			return SetInvalid(player_class.handle);
+		}
+	}
+	return null;
+}
+
+function GetInvalidClass(activator)
+{
+	foreach(p in PLAYERS)
+	{
+		if(p.handle == activator)
+		{
+			foreach(a in INVALID_STEAM_ID)
+			{
+				local steamid = split(a," ");
+				if(p.steamid == steamid[0])
+				{
+					return steamid[1].tointeger();
+				}
+			}
+			return 0;
+		}
+	}
+}
+
+Winner_array <- [];
+
+function NewStageGiveMoney()
+{
+	if(Winner_array.len() > 0)
+	{
+		local money = 0;
+		if(Stage == 2)
+			money = 150;
+		else if(Stage == 3)
+			money = 200;
+		else if(Stage == 4)
+			money = 150;
+		else if(Stage == 5)
+			money = 350;
+		else if(Stage == 6)
+			money = 500;
+		foreach(p in PLAYERS)
+		{
+			if(InArray(Winner_array, p.handle))
+				p.Add_money(money);
+			else
+				p.PassIncome();
+		}
+	}
+	Winner_array.clear();
+}
+
+function InArray(array, value)
+{
+	foreach(nvalue in array)
+	{
+		if(nvalue == value)
+			return true;
+	}
+	return false;
+}
+
+function SetVipSkin()
+{
+	local pl = GetPlayerClassByHandle(activator);
+	if(pl == null || !pl.vip)
+		return Fade_Red(activator);
+
+	Fade_White(activator);
+
+	if(caller.GetName() == "ct_trigger")
+	{
+		if(pl.ctskin == CT_VIP_MODEL)
+			pl.ctskin = null;
+		else
+			pl.ctskin = CT_VIP_MODEL;
+
+		if(activator.GetTeam() == 3)
+			activator.SetModel(CT_VIP_MODEL);
+	}
+	else
+	{
+		if(pl.tskin == T_VIP_MODEL)
+			pl.tskin = null;
+		else
+			pl.tskin = T_VIP_MODEL;
+
+		if(activator.GetTeam() == 2)
+			activator.SetModel(T_VIP_MODEL);
+	}
+}
+
+function SetStage(i)
+{
+	BeatStage();
+
+	Stage = i.tointeger();
+	
+	switch (Stage)
+	{
+		case 1:
+			STARTMONEY = 50;
+			break;
+		case 2:
+			STARTMONEY = 100;
+			break;
+		case 3:
+			STARTMONEY = 150;
+			break;
+		case 4:
+			STARTMONEY = 200;
+			break;
+		case 5:
+			STARTMONEY = 250;
+			break;
+		default:
+			STARTMONEY = 50;
+			break;
+	}
+}
+
+function AdminSetStage(i)
+{
+	local g_round = Entities.FindByName(null, "round_end");
+	if(g_round != null && g_round.IsValid())
+	{
+		EntFireByHandle(g_round, "EndRound_Draw", "3", 0, null, null);
+	}
+	
+	Stage = i;
+}
+
+///////////////////////////////////////////////////////////
+//events chat commands for admin room
+
+::PLAYERS <- [];
+PLAYERS_SAVE <- [];
+PL_HANDLE <- [];
+TEMP_HANDLE <- null;
+MAPPER_STEAM_ID <- [
+"STEAM_1:1:124348087",  //kotya
+"STEAM_1:1:120927227",  //kondik
+"STEAM_1:0:58001308",   //Mike
+"STEAM_1:0:77682040",	//Friend
+"STEAM_1:1:20206338",	//HaRyDe
+];
+
+VIP_STEAM_ID <-[
+"STEAM_1:1:17775692",    //memes translate
+"STEAM_1:1:175332810",    //Champagne translate
+"STEAM_1:1:114921174",    //Koen  translate
+
+"STEAM_1:1:161274095",    //Niceshoot script help
+"STEAM_1:1:22521282",   //Luffaren script help
+"STEAM_1:0:205165205",    //waffel just waffel
+
+"STEAM_1:1:159416248",    //toppi made skin for VIP
+
+"STEAM_1:0:36455426",    //Lexer
+"STEAM_1:1:32284494",    //Jayson
+"STEAM_1:0:176529696",    //switchwwe
+"STEAM_1:1:98076432",   //xmin
+"STEAM_1:1:31474938",   //Headsh
+"STEAM_1:0:56405847",   //Vishnya
+
+"STEAM_1:1:53251263"    //SHUFEN
+"STEAM_1:0:32966106",    //extrim
+"STEAM_1:1:93569664",    //Kun
+"STEAM_1:1:70706976",    //Lunar
+"STEAM_1:0:33036708",    //CrazyKid
+"STEAM_1:0:96803884",    //Hestia
+"STEAM_1:1:95551530",    //ZeddY
+"STEAM_1:1:67559577",    //FireWork
+"STEAM_1:0:52425310",    //Nemo
+"STEAM_1:0:68863967",    //Nano
+"STEAM_1:0:217698549",    //Tianli
+
+"STEAM_1:0:187018106",    //creepy
+
+"STEAM_1:0:545026218",    //sushibanana
+"STEAM_1:0:67807133",    //spxctator
+"STEAM_1:1:184872578",    //xiaodi
+"STEAM_1:0:139000667",    //liala
+"STEAM_1:1:231588744",    //takoyaki
+"STEAM_1:0:21838852",    //detroid
+"STEAM_1:1:420073883",    //shizuka
+"STEAM_1:1:76518687",    //tupu
+"STEAM_1:1:183225255",    //ponya
+"STEAM_1:0:213888379",    //burning my life
+"STEAM_1:1:101719126",    //bulavator
+"STEAM_1:0:44723115",    //umad
+"STEAM_1:1:129184042",    //dead angel
+"STEAM_1:0:130098902",    //Ruby
+
+"STEAM_1:0:134448990",    //Mist
+"STEAM_1:1:164683076",    //Tsukasa
+
+"STEAM_1:0:121740322",    //Ambitious
+"STEAM_1:0:82660003",    //tilgep
+"STEAM_1:0:602192040",    //ump9
+
+"STEAM_1:0:54446629",    //FPT
+
+"STEAM_1:1:195974930",    //Igromen
+
+"STEAM_1:1:54109628",    //Cron
+
+"STEAM_1:0:125983318",    //widez
+
+"STEAM_1:0:564459774",    //kiskis
+
+"STEAM_1:1:188314072",    //Crimson
+"STEAM_1:0:51987357",    //Tachibana
+
+"STEAM_1:1:444681594",    //M1mic
+
+"STEAM_1:0:201197343",    //WhiteShadow
+"STEAM_1:1:42492310",    //Wind of Liberty
+"STEAM_1:0:620260550",    //xz china nickname
+"STEAM_1:0:33069283",    //Datless
+
+"STEAM_1:0:141175718",   //priv ii
+"STEAM_1:1:33241040",    //Frygtlos
+
+"STEAM_1:0:423990492",   //dolo
+];
+
+INVALID_STEAM_ID <- [
+"STEAM_1:0:56405847 27",    //Vishnya
+"STEAM_1:1:20206338 22",    //HaRyDe
+"STEAM_1:1:210572608 0"     //Shy Way
+"STEAM_1:0:430842357 0",    //naiz
+"STEAM_1:1:124348087 1",      //kotya
+"STEAM_1:1:31474938 0",        //headshoter
+"STEAM_1:1:98076432 0",        //xmin
+"STEAM_1:1:17775692 3",        //memes
+"STEAM_1:0:561327146 0",    //INSIDE
+"STEAM_1:0:205165205 2",    //waffle
+"STEAM_1:0:58001308 4",        //Mike
+"STEAM_1:0:32966106 0",        //extrim
+"STEAM_1:0:53585397 0",        //Imma
+"STEAM_1:0:16144131 0",        //Malgo
+"STEAM_1:1:175332810 5",    //Champagne
+"STEAM_1:0:148147606 6",    //mrs. Champagne
+"STEAM_1:0:187018106 7",    //Creepy
+"STEAM_1:0:134448990 8",    //Mist
+
+"STEAM_1:0:545026218 9",    //sushibanana
+"STEAM_1:0:67807133 10",    //spxctator
+"STEAM_1:1:184872578 11",    //xiaodi
+"STEAM_1:0:139000667 12",    //liala
+"STEAM_1:1:231588744 13",    //takoyaki
+"STEAM_1:0:21838852 14",    //detroid
+"STEAM_1:1:420073883 15",    //shizuka
+"STEAM_1:1:76518687 16",    //tupu
+"STEAM_1:1:183225255 17",    //ponya
+"STEAM_1:0:213888379 18",    //burning my life
+"STEAM_1:1:101719126 19",    //bulavator
+"STEAM_1:0:44723115 20",    //umad
+"STEAM_1:1:129184042 21",    //dead angel
+
+"STEAM_1:0:121740322 29",    //Ambitious
+"STEAM_1:0:82660003 28",    //tilgep
+"STEAM_1:0:602192040 23",    //ump9
+
+"STEAM_1:0:52425310 24",    //Nemo
+"STEAM_1:0:54446629 25",    //FPT
+"STEAM_1:1:195974930 26",    //Igromen
+
+"STEAM_1:1:551667585 30",    //Bonesaw
+"STEAM_1:0:118645099 31",    //MercaXlv
+
+"STEAM_1:1:54109628 32",    //Cron
+
+"STEAM_1:0:564459774 33",    //kiskis
+
+"STEAM_1:1:188314072 34",    //Crimson
+"STEAM_1:0:51987357 35",    //Tachibana
+"STEAM_1:0:217789846 36",    //Kurumi
+
+"STEAM_1:1:444681594 37",    //M1mic
+
+"STEAM_1:0:201197343 38",    //WhiteShadow
+"STEAM_1:1:42492310 39",    //Wind of Liberty
+"STEAM_1:0:620260550 40",    //xz china nickname
+"STEAM_1:0:33069283 41",    //Datless
+];
+
+PIDARAS_COUNT <- 0;
+
+PIDARAS_STEAM_ID <-[
+"STEAM_1:0:209481083", //e.t
+]
+
+TESTER_STEAM_ID <-[
+"STEAM_1:0:36455426",	//Lexer
+"STEAM_1:1:32284494",	//Jayson
+"STEAM_1:0:176529696",	//switchwwe
+"STEAM_1:0:205165205",	//waffle
+"STEAM_1:1:31474938",   //Headsh
+"STEAM_1:0:56405847",   //Vishnya
+];
+
+eventinfo   <- null;
+eventproxy  <- null;
+eventlist   <- null;
+eventdisconnect <- null;
+eventdeath  <- null;
+eventhurt  <- null;
+eventjump   <- null;
+PlayerText  <- null;
+CreditsText <- null;
+ItemText    <- null;
+ShopHud     <- null;
+::SpeedMod    <- null;
+
+g_zone      <- null;
+client_ent <- null;
+once_check  <- false;
+
+T_Player_Check <- 5.00;
+
+function LoopPlayerCheck()
+{
+	EntFireByHandle(self, "RunScriptCode", "LoopPlayerCheck();", T_Player_Check, null, null);
+	if(PL_HANDLE.len() > 0){PL_HANDLE.clear();}
+	EntFireByHandle(g_zone, "FireUser1", "", 0.00, null, null);
+	EntFireByHandle(self, "RunScriptCode", "CheckValidInArr();", T_Player_Check*1.5, null, null);
+}
+
+
+///////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////
+//RPG
+lvlcost <- [50,75,100];
+
+::Infect_Money <- 10;
+::Shoot_OneMoney <- 20;
+Shoot_OneMoney = 1.00 / Shoot_OneMoney;
+
+perkhp_zm_cost <- 45;
+::perkhp_zm_hpperlvl <- 4500;
+::perkhp_zm_maxlvl <- 6; // 30000hp
+
+::MaxHPZombie <- 7500;
+::MaxHPZombie_Classic <- 15000;
+
+perkhp_hm_cost <- 30;
+::perkhp_hm_maxlvl <- 10; // 300hp
+::perkhp_hm_hpperlvl <- 25;
+
+
+perkhuckster_cost <- 50;
+::perkhuckster_maxlvl <- 5; // 25%
+::perkhuckster_hucksterperlvl <- 5;
+
+perksteal_cost <- 70;
+::perksteal_maxlvl <- 3; // 9%
+::perksteal_stilleperlvl <- 3;
+
+perkresist_hm_cost <- 70;
+::perkresist_hm_maxlvl <- 3;
+::perkresist_hm_resistperlvl <- 30;
+
+perkspeed_cost <- 100;
+::perkspeed_maxlvl <- 5; // 16%
+::perkspeed_speedperlvl <- 3.2;
+
+perkluck_cost <- 150;
+::perkluck_maxlvl <- 5; // 50% dont touch
+::perkluck_luckperlvl <- 10;
+
+perkchameleon_cost <- 999999;
+::perkchameleon_maxlvl <- 5; // 100% dont touch
+::perkchameleon_chameleonperlvl <- 20;
+
+perkresist_zm_cost <- 90;
+::perkresist_zm_maxlvl <- 50; // 50%
+::perkresist_zm_resistperlvl <- 1;
+
+::MaxLevel <- 3;
+
+::Buff_cost <- 200;
+::Buff_Classic_cost <- 500;
+
+item_ammo_cost <- 65;
+item_ammo_count <- 0;
+item_ammo_countB <- 2;
+
+item_potion_cost <- 50;
+item_potion_count <- 0;
+item_potion_countB <- 4;
+
+item_phoenix_cost <- 65;
+item_phoenix_count <- 0;
+item_phoenix_countB <- 1;
+
+class Player
+{
+	knife = null;
+	tskin = null;
+	ctskin = null;
+
+	block_entwatch = false;
+	block_waffel = false;
+	block_driver = null;
+
+	invalid = false;
+
+	userid = null;
+	name = null;
+	steamid = null;
+	handle = null;
+	mapper = false;
+	vip = false;
+
+	poison_status = false;
+	mike = null;
+	yuffi = null;
+	pet = null;
+	petstatus = null;
+
+	person_stock_one = "";
+
+	item_buff_radius = false;
+	item_buff_last = false;
+	item_buff_recovery = false;
+	item_buff_turbo = false;
+	item_buff_doble = false;
+
+	antidebuff = false;
+	slow = false;
+	setPerks = false;
+
+	speed_default = 1.0;
+	speed_default_zm = 1.05;
+
+	speed = 1.0;
+
+	money = 50;
+
+	otm = 0;
+
+	infect = 0;
+	shoots = 0;
+
+	bio_lvl = 0;
+	ice_lvl = 0;
+	poison_lvl = 0;
+	wind_lvl = 0;
+	summon_lvl = 0;
+	fire_lvl = 0;
+	electro_lvl = 0;
+	earth_lvl = 0;
+	gravity_lvl = 0;
+	ultimate_lvl = 0;
+	heal_lvl = 0;
+
+	perkhp_zm_lvl = 0;
+	perkhp_hm_lvl = 0;
+	perkhuckster_lvl = 0;
+	perksteal_lvl = 0;
+
+	perkresist_hm_lvl = 0;
+	perkspeed_lvl = 0;
+	perkluck_lvl = 0;
+	perkchameleon_lvl = 0;
+	perkresist_zm_lvl = 0;
+
+	// teleporting = false;
+	// lastpos = [Vector(0,0,0)];
+	// lastang = [Vector(0,0,0)];
+	// function SetLastPos()
+	// {
+	//     if(this.teleporting)return;
+	//     if(this.handle.IsValid())
+	//     {
+	//         if(this.handle.GetHealth() > 0 && this.handle.GetTeam() != 1)
+	//         {
+	//             if(this.lastpos.len() >= 250)
+	//             {
+	//                 this.lastpos.remove(0);
+	//                 this.lastang.remove(0);
+	//             }
+	//             if(this.lastpos.len() > 2)
+	//             {
+	//                 local a1 = this.lastpos[this.lastpos.len() - 1];
+	//                 local a2 = this.handle.GetOrigin();
+	//                 if(a1.x != a2.x || a1.y != a2.y || a1.z != a2.z)
+	//                 {
+	//                     this.lastpos.push(a2);
+	//                     this.lastang.push(this.handle.GetAngles());
+	//                 }
+	//             }
+	//             else
+	//             {
+	//                 this.lastpos.push(this.handle.GetOrigin());
+	//                 this.lastang.push(this.handle.GetAngles());
+	//             }
+	//         }
+	//     }
+	//     return;
+	// }
+
+
+	function ShootTick(i = Shoot_OneMoney)
+	{
+		this.shoots += i;
+
+		if(this.shoots >= 1.00)
+		{
+			this.shoots = 0;
+			this.Add_money(1);
+		}
+	}
+
+	function Set_money(i)
+	{
+		this.money = i;
+		return
+	}
+
+	function Add_money(i, imm = true)
+	{
+		i = ConvertPrice(i);
+		local MoneyText = Entities.FindByName(null, "pl_add_money");
+		MoneyText.__KeyValueFromString("message", "+ "+i+Money_pref);
+		EntFireByHandle(MoneyText, "Display", "", 0, this.handle, this.handle);
+
+		if (imm)
+		{
+			if (EVENT_2XMONEY)
+			{
+				i *= 2;
+			}
+		}
+
+		this.money += i;
+		this.money = ConvertPrice(this.money);
+		return
+	}
+	function Minus_money(i)
+	{
+		i = ConvertPrice(i);
+		local MoneyText = Entities.FindByName(null, "pl_minus_money");
+		MoneyText.__KeyValueFromString("message", "- "+i+Money_pref);
+		EntFireByHandle(MoneyText, "Display", "", 0, this.handle, this.handle);
+		if(this.money - i <= 0)
+		{
+			this.money = 0;
+			return
+		}
+
+		this.money -= i;
+		this.money = ConvertPrice(this.money);
+		return;
+	}
+
+
+	function Add_speed(i, perm = false)
+	{
+		if(!perm)
+		{
+			local speed_def = this.speed_default;
+			if(this.handle.GetTeam() == 2)
+				speed_def = this.speed_default_zm;
+
+			if(speed_def <= this.speed + i)
+				return this.speed = speed_def;
+		}
+		else
+		{
+			this.speed_default += i;
+		}
+		return this.speed += i;
+	}
+	function Remove_speed(i)
+	{
+		this.slow = true;
+
+		if(this.handle.GetTeam() == 2)
+		{
+			local minspeed = this.perkresist_zm_lvl * perkresist_zm_resistperlvl * 0.008;
+			if(this.speed - i <= minspeed)
+				return this.speed = minspeed;
+		}
+		else
+		{
+			local minspeed = perkresist_hm_resistperlvl * 0.008;
+			if(this.speed - i <= minspeed)
+				return this.speed = minspeed;
+		}
+
+		return this.speed -= i;
+	}
+	function ReturnSpeed()
+	{
+		local speed_def = this.speed_default;
+		if(this.handle.GetTeam() == 2)
+			speed_def = this.speed_default_zm;
+
+		this.slow = false;
+		this.speed = speed_def;
+
+		return speed_def;
+	}
+
+	function Set_level_perkluck(i)
+	{
+		return this.perkluck_lvl = i;
+	}
+	function level_up_perkluck()
+	{
+		if(this.perkluck_lvl < perkluck_maxlvl)
+		{
+			this.perkluck_lvl++;
+		}
+	}
+
+	function Set_level_perkchameleon(i)
+	{
+		return this.perkchameleon_lvl = i;
+	}
+	function level_up_perkchameleon()
+	{
+		if(this.perkchameleon_lvl < perkchameleon_maxlvl)
+		{
+			this.setPerks = false;
+			this.perkchameleon_lvl++;
+		}
+	}
+
+	function Set_level_perkresist_hm(i)
+	{
+		return this.perkresist_hm_lvl = i;
+	}
+	function level_up_perkresist_hm()
+	{
+		if(this.perkresist_hm_lvl < perkresist_hm_maxlvl)
+		{
+			this.perkresist_hm_lvl++;
+		}
+	}
+
+	function Get_Resist_From_First_lvl(i)
+	{
+		if(this.perkresist_hm_lvl < 1)return i;
+		return i - i * 0.01 * perkresist_hm_resistperlvl;
+	}
+
+	function Get_Resist_From_Second_lvl(i)
+	{
+		if(this.perkresist_hm_lvl < 2)return i;
+		return i - i * 0.01 * perkresist_hm_resistperlvl;
+	}
+
+	function Get_Resist_From_Third_lvl(i)
+	{
+		if(this.perkresist_hm_lvl < 3)return i;
+		return i - i * 0.01 * perkresist_hm_resistperlvl;
+	}
+
+	function Set_level_perkresist_zm(i)
+	{
+		return this.perkresist_zm_lvl = i;
+	}
+	function level_up_perkresist_zm()
+	{
+		if(this.perkresist_zm_lvl < 50)
+		{
+			this.setPerks = false;
+			this.perkresist_zm_lvl++;
+		}
+	}
+
+	function Get_Resist_From_Slow(i)
+	{
+		if(this.handle.GetTeam() == 2)
+		{
+			if(this.perkresist_zm_lvl == 0)return i;
+			return i - i * 0.01 * this.perkresist_zm_lvl * perkresist_zm_resistperlvl;
+		}
+		else
+		{
+			if(this.perkresist_hm_lvl < 3)return i;
+			return i - i * 0.01 * perkresist_hm_resistperlvl;
+		}
+	}
+	function Get_Resist_From_ItemDamage(i)
+	{
+		if(this.perkresist_zm_lvl == 0)return i;
+		return i - i * 0.01 * this.perkresist_zm_lvl * perkresist_zm_resistperlvl;
+	}
+
+
+	// function GetNewPatern(array)
+	// {
+	//     local array_sum_all = 0;
+	//     for(local i = 0; i < patern.len(); i++)
+	//     {
+	//         array_sum_all += patern[i];
+	//     }
+	//     local midle = array_sum_all / patern.len()
+	//     local min_index = [];
+	//     local max_index = [];
+	//     for (local i = 0; i < patern.len(); i++)
+	//     {
+	//         if(patern[i] >= midle)min_index.push(i);
+	//         else max_index.push(i);
+	//     }
+	//     if(min_index.len() > 1)patern[0] -= midle;
+	//     else
+	//     {
+	//         local loc_midle = midle;
+	//         for (local i = 0; i < min_index.len(); i++)
+	//         {
+	//             patern[min_index[i]] -= midle;
+	//             loc_midle /= 2;
+	//         }
+	//     }
+	//     if(max_index.len() > 1)patern[patern.len()-1] += midle;
+	//     else
+	//     {
+	//         local loc_midle = midle;
+	//         for (local i = 0; i < max_index.len(); i++)
+	//         {
+	//             patern[max_index[i]] += midle;
+	//             loc_midle /= 2;
+	//         }
+	//     }
+	//     return array;
+	// }
+
+	function GetChance(array)
+	{
+		local total_chance_sum = 0;
+		for (local i = 0; i < array.len(); i++)
+		{
+			total_chance_sum += array[i];
+		}
+		local r = RandomInt(0, total_chance_sum);
+		local current_sum = 0;
+		for(local i = 0; i < array.len(); i++)
+		{
+			if (current_sum <= r && r < current_sum + array[i])return i;
+			current_sum += array[i];
+		}
+	}
+	function PassIncome()
+	{
+		local luck_level = this.perkluck_lvl;
+		local p_money = 50;
+		local chance = [0,0,0,0,0];
+		if(luck_level > 0)
+		{
+			if(luck_level == 1)chance = [45,35,30,20,10];
+			if(luck_level == 2)chance = [35,45,35,25,20];
+			if(luck_level == 3)chance = [30,35,45,35,30];
+			if(luck_level == 4)chance = [20,25,35,45,35];
+			if(luck_level == 5)chance = [10,20,30,35,45];
+			p_money * luck_level;
+
+			local index = GetChance(chance);
+			if(index != null)
+			{
+				p_money += 5 * index;
+			}
+		}
+
+		Add_money(p_money)
+	}
+	function GetNewStock()
+	{
+		this.person_stock_one = "";
+		local count = [0,1,2,3];
+		local chance = [60,30,10,0];
+		local luck_level = perkluck_lvl;
+		if(luck_level > 0)
+		{
+			local bonus = [-12,-4,11,5];
+			for (local i = 0; i<chance.len(); i++)
+			{
+				chance[i] += bonus[i] * luck_level;
+			}
+			// if(luck_level == 1)chance = [48,26,21,5];
+			// if(luck_level == 2)chance = [36,22,32,10];
+			// if(luck_level == 3)chance = [24,18,43,15];
+			// if(luck_level == 4)chance = [12,14,54,20];
+			// if(luck_level == 5)chance = [0,10,65,25];
+		}
+		local index = GetChance(chance);
+		if(index != null)
+		{
+			local array = [" bio"," ice",
+			" poison"," wind"," summon",
+			" fire"," electro"," earth",
+			" gravity"," ultimate"," heal"];
+
+			local arraylen = array.len() - index;
+			for(local i = 0; i < arraylen; i++)
+			{
+				local random = RandomInt(0,array.len() - 1);
+				array.remove(random);
+			}
+			for(local i = 0; i < array.len(); i++)
+			{
+				this.person_stock_one += array[i];
+			}
+		}
+
+	}
+	constructor(_userid,_name,_steamid)
+	{
+		this.userid = _userid;
+		this.name = _name;
+		this.steamid = _steamid;
+
+		this.money = STARTMONEY;
+	}
+	function SetMapper()
+	{
+		if(!this.mapper)
+		{
+			return this.mapper = true;
+		}
+	}
+	function SetVip()
+	{
+		if(!this.vip)
+		{
+			return this.vip = true;
+		}
+	}
+	function Change_Buff(i)
+	{
+		this.item_buff_radius = false;
+		this.item_buff_last = false;
+		this.item_buff_recovery = false;
+		this.item_buff_turbo = false;
+		this.item_buff_doble = false;
+		if(i == 0)this.item_buff_radius = true;
+		else if(i == 1)this.item_buff_last = true;
+		else if(i == 2)this.item_buff_recovery = true;
+		else if(i == 3)this.item_buff_turbo = true;
+		else if(i == 4)this.item_buff_doble = true;
+	}
+	function Set_level_perkhp_zm(i)
+	{
+		return this.perkhp_zm_lvl = i;
+	}
+	function level_up_perkheal_zm()
+	{
+		// if(this.perkhp_zm_lvl < perkhp_zm_maxlvl)
+		{
+			this.setPerks = false;
+			this.perkhp_zm_lvl++;
+		}
+	}
+	function Set_level_perkhp_hm(i)
+	{
+		return this.perkhp_hm_lvl = i;
+	}
+	function level_up_perkheal_hm()
+	{
+		// if(this.perkhp_hm_lvl < perkhp_hm_maxlvl)
+		{
+			this.perkhp_hm_lvl++;
+		}
+	}
+	function GetNewPrice(i)
+	{
+		if(EVENT_BLACKFRIDAY)
+		{
+			i -= i * EVENT_BLACKFRIDAY_COUNT * 0.01;
+		}
+		if(this.perkhuckster_lvl == 0)return i;
+		return i - (i * perkhuckster_hucksterperlvl * this.perkhuckster_lvl * 0.01);
+	}
+
+	function GetNewPriceV2(i)
+	{
+		return i - (i * perkhuckster_hucksterperlvl * (perkhuckster_maxlvl - this.perkhuckster_lvl) * 0.01);
+	}
+
+	function Set_level_perkhuck(i)
+	{
+		return this.perkhuckster_lvl = i;
+	}
+	function level_up_perkhuck()
+	{
+		if(this.perkhuckster_lvl < perkhuckster_maxlvl)
+		{
+			this.perkhuckster_lvl++;
+		}
+	}
+	function Set_level_perkspeed(i)
+	{
+		return this.perkspeed_lvl = i;
+	}
+	function level_up_perkspeed()
+	{
+		if(this.perkspeed_lvl < perkspeed_maxlvl)
+		{
+			this.setPerks = false;
+			this.perkspeed_lvl++;
+			this.speed_default_zm = 1.0 + (this.perkspeed_lvl * perkspeed_speedperlvl * 0.01);
+		}
+	}
+	function Set_level_perksteal(i)
+	{
+		return this.perksteal_lvl = i;
+	}
+	function level_up_perksteal()
+	{
+		if(this.perksteal_lvl < perksteal_maxlvl)
+		{
+			this.otm++;
+			this.perksteal_lvl++;
+		}
+	}
+	function Set_level_bio(i){return this.bio_lvl = i;}
+	function Set_level_ice(i){return this.ice_lvl = i;}
+	function Set_level_poison(i){return this.poison_lvl = i;}
+	function Set_level_wind(i){return this.wind_lvl = i;}
+	function Set_level_summon(i){return this.summon_lvl = i;}
+	function Set_level_fire(i){return this.fire_lvl = i;}
+	function Set_level_electro(i){return this.electro_lvl = i;}
+	function Set_level_earth(i){return this.earth_lvl = i;}
+	function Set_level_gravity(i){return this.gravity_lvl = i;}
+	function Set_level_ultimate(i){return this.ultimate_lvl = i;}
+	function Set_level_heal(i){return this.heal_lvl = i;}
+	function level_up_bio()
+	{
+		if(this.bio_lvl < MaxLevel)
+		{
+			this.bio_lvl++;
+			return false;
+		}
+		return true;
+	}
+	function level_up_ice()
+	{
+		if(this.ice_lvl < MaxLevel)
+		{
+			this.ice_lvl++;
+			return false;
+		}
+		return true;
+	}
+	function level_up_poison()
+	{
+		if(this.poison_lvl < MaxLevel)
+		{
+			this.poison_lvl++;
+			return false;
+		}
+		return true;
+	}
+	function level_up_wind()
+	{
+		if(this.wind_lvl < MaxLevel)
+		{
+			this.wind_lvl++;
+			return false;
+		}
+		return true;
+	}
+	function level_up_summon()
+	{
+		if(this.summon_lvl < MaxLevel)
+		{
+			this.summon_lvl++;
+			return false;
+		}
+		return true;
+	}
+	function level_up_fire()
+	{
+		if(this.fire_lvl < MaxLevel)
+		{
+			this.fire_lvl++;
+			return false;
+		}
+		return true;
+	}
+	function level_up_electro()
+	{
+		if(this.electro_lvl < MaxLevel)
+		{
+			this.electro_lvl++;
+			return false;
+		}
+		return true;
+	}
+	function level_up_earth()
+	{
+		if(this.earth_lvl < MaxLevel)
+		{
+			this.earth_lvl++;
+			return false;
+		}
+		return true;
+	}
+	function level_up_gravity()
+	{
+		if(this.gravity_lvl < MaxLevel)
+		{
+			this.gravity_lvl++;
+			return false;
+		}
+		return true;
+	}
+	function level_up_ultimate()
+	{
+		if(this.ultimate_lvl < MaxLevel)
+		{
+			this.ultimate_lvl++;
+			return false;
+		}
+		return true;
+	}
+	function level_up_heal()
+	{
+		if(this.heal_lvl < MaxLevel)
+		{
+			this.heal_lvl++;
+			return false;
+		}
+		return true;
+	}
+}
+
+function DamagePlayer(i,typedamage = null)
+{
+	local pl = GetPlayerClassByHandle(activator);
+	local newi = i;
+
+	if(typedamage != null)
+	{
+		if(typedamage == "item")
+		{
+			newi = pl.Get_Resist_From_ItemDamage(i);
+		}
+		else if (typedamage == "lvl1")
+		{
+			newi = pl.Get_Resist_From_First_lvl(i);
+		}
+		else if (typedamage == "lvl2")
+		{
+			newi = pl.Get_Resist_From_Second_lvl(i);
+		}
+		else if (typedamage == "lvl3")
+		{
+			newi = pl.Get_Resist_From_Third_lvl(i);
+		}
+	}
+	local hp = (activator.GetHealth() - newi).tointeger();
+	if(hp < 1)
+	{
+		EntFireByHandle(activator,"SetHealth","-69",0.00,null,null);
+	}
+	else
+	{
+		activator.SetHealth(hp);
+	}
+}
+
+function BurnPlayer(i,time,first = false)
+{
+	local pl = GetPlayerClassByHandle(activator);
+	local newtime = time;
+	newtime = pl.Get_Resist_From_Second_lvl(time);
+	DamagePlayer(i,"lvl2");
+	if(!pl.antidebuff)
+		EntFireByHandle(activator, "IgniteLifeTime", "" + newtime, 0, activator, activator);
+}
+
+function PoisonPlayer(i,time,tickdamage)
+{
+	local pl = GetPlayerClassByHandle(activator);
+	local newtime = time;
+
+	newtime = pl.Get_Resist_From_Second_lvl(time);
+	pl.poison_status = true;
+
+	DamagePlayer(i,"lvl2");
+	SlowPlayer(0.5,1);
+	if(!pl.antidebuff)
+		EntFireByHandle(self, "RunScriptCode", "PoisonPlayerTick("+(newtime)+","+tickdamage.tostring()+")", 1, activator, activator);
+}
+
+function PoisonPlayerTick(time,i)
+{
+	local pl = GetPlayerClassByHandle(activator);
+
+	if(pl.antidebuff)
+	{
+		pl.poison_status = false;
+		return;
+	}
+
+	if(time <= 0)pl.poison_status = false;
+	else pl.poison_status = true;
+
+	if(!pl.poison_status)
+		return;
+
+	DamagePlayer(i);
+	SlowPlayer(0.5,0.5);
+	Fade_Poison(activator);
+
+	EntFireByHandle(self, "RunScriptCode", "PoisonPlayerTick("+(time - 1).tostring()+","+i.tostring()+")", 1, activator, activator);
+}
+function AntiDebuff(time = 0)
+{
+	local pl = GetPlayerClassByHandle(activator);
+	if(pl == null)
+		return;
+
+	pl.antidebuff = true;
+
+	UnSlowPlayer(pl)
+
+	local itemowner = GetItemByOwner(activator);
+	if(itemowner != null)
+		EntFireByHandle(itemowner.button, "RunScriptCode", "au = true", 0.00, null, null);
+	if(time == 0)
+		return;
+	EntFireByHandle(self, "RunScriptCode", "GetPlayerClassByHandle(activator).antidebuff = false", time, activator, activator);
+}
+
+function SlowPlayer(i,time = 0)
+{
+	local pl = GetPlayerClassByHandle(activator);
+	if(time < 0)
+	{
+		EntFireByHandle(SpeedMod, "ModifySpeed", (pl.Add_speed(i, true)).tostring(), 0, activator, activator);
+		return;
+	}
+	if(pl.antidebuff && time != 0)
+		return;
+
+	local newi = pl.Get_Resist_From_Slow(i);
+
+	EntFireByHandle(SpeedMod, "ModifySpeed", (pl.Remove_speed(newi)).tostring(), 0, activator, activator);
+	if(time == 0)
+		return;
+
+	EntFireByHandle(self, "RunScriptCode", "ReturnPlayerSpeed("+newi.tostring()+")", time, activator, activator);
+}
+
+function ReturnPlayerSpeed(i)
+{
+	local pl = GetPlayerClassByHandle(activator);
+
+	if(!pl.slow)
+		return;
+
+	EntFireByHandle(SpeedMod, "ModifySpeed", (pl.Add_speed(i)).tostring(), 0, activator, activator);
+}
+
+//Вернуть скорость
+function UnSlowPlayer(pl = null)
+{
+	if(pl == null)
+		pl = GetPlayerClassByHandle(activator);
+	if(!pl.slow)
+		return;
+
+	EntFireByHandle(SpeedMod, "ModifySpeed", (pl.ReturnSpeed()).tostring(), 0, activator, activator);
+}
+
+class Pet
+{
+	originx = null;
+	originy = null;
+	originz = null;
+
+	anglesx = null;
+	anglesy = null;
+	anglesz = null;
+
+	model_path = null;
+	anim_run = null;
+	anim_jump = null;
+	anim_idle = null;
+
+	color_rmi = null;
+	color_rmx = null;
+
+	color_gmi = null;
+	color_gmx = null;
+
+	color_bmi = null;
+	color_bmx = null;
+
+	scale = null;
+	anim_toidle = null;
+
+	constructor(_origin,_model_path,_anim_run,_anim_jump,_anim_idle,_toanim_idle,_color_r,_color_g,_color_b,_angles,_scale)
+	{
+		local _origin = split(_origin," ");
+		originx = _origin[0].tointeger();
+		originy = _origin[1].tointeger();
+		originz = _origin[2].tointeger();
+
+		model_path = _model_path;
+		anim_run = _anim_run;
+		anim_jump = _anim_jump;
+		anim_idle = _anim_idle;
+		anim_toidle = _toanim_idle;
+
+		local _color_r = split(_color_r,"-");
+		color_rmi = _color_r[0].tointeger();
+		color_rmx = _color_r[1].tointeger();
+
+		local _color_g = split(_color_g,"-");
+		color_gmi = _color_g[0].tointeger();
+		color_gmx = _color_g[1].tointeger();
+
+		local _color_b = split(_color_b,"-");
+		color_bmi = _color_b[0].tointeger();
+		color_bmx = _color_b[1].tointeger();
+
+		local _angles = split(_angles," ");
+		anglesx = _angles[0].tointeger();
+		anglesy = _angles[1].tointeger();
+		anglesz = _angles[2].tointeger();
+
+		scale = _scale;
+	}
+}
+
+Pet_Preset <- [];
+
+function CreatePet(Handle,i)
+{
+	local pl = GetPlayerClassByHandle(Handle)
+	if(GetPlayerClassByHandle(Handle).pet != null)GetPlayerClassByHandle(Handle).pet.Destroy();
+
+	local pet = Entities.CreateByClassname("prop_dynamic");
+
+	pet.SetModel(Pet_Preset[i].model_path)
+
+	pet.__KeyValueFromString("modelscale", Pet_Preset[i].scale)
+
+	pet.__KeyValueFromString("rendercolor",
+	RandomInt(Pet_Preset[i].color_rmi,Pet_Preset[i].color_rmx).tostring()+" "+
+	RandomInt(Pet_Preset[i].color_gmi,Pet_Preset[i].color_gmx).tostring()+" "+
+	RandomInt(Pet_Preset[i].color_bmi,Pet_Preset[i].color_bmx).tostring());
+
+	local ang = Handle.GetAngles().y;
+	pet.SetAngles(
+	0 + Pet_Preset[i].anglesx,
+	ang + Pet_Preset[i].anglesy,
+	0 + Pet_Preset[i].anglesz);
+
+	pet.SetOrigin(Handle.GetOrigin()
+	+ Handle.GetForwardVector() * Pet_Preset[i].originx
+	+ Handle.GetLeftVector() * Pet_Preset[i].originy
+	+ Handle.GetUpVector() * Pet_Preset[i].originz)
+
+	EntFireByHandle(pet, "SetParent", "!activator", 0, Handle, Handle);
+	pl.pet = pet;
+	pl.petstatus = "IDLE";
+
+	EntFireByHandle(pet, "SetDefaultAnimation", Pet_Preset[i].anim_idle, 0, Handle, Handle);
+	EntFireByHandle(pet, "SetAnimation", Pet_Preset[i].anim_idle, 0, Handle, Handle);
+}
+///////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////
+//Shop manager
+
+function ResetBuff()
+{
+	local pl = GetPlayerClassByHandle(activator);
+
+	pl.item_buff_radius = false;
+	pl.item_buff_last = false;
+	pl.item_buff_recovery = false;
+	pl.item_buff_turbo = false;
+	pl.item_buff_doble = false;
+
+	local text = "Support Materia was been reseted";
+	ShowShopText(activator, text);
+}
+
+function ResetPerk()
+{
+	local pl = GetPlayerClassByHandle(activator);
+	local money = 0;
+
+	money += pl.perkhp_zm_lvl * perkhp_zm_cost;
+	money += pl.perkhp_hm_lvl * perkhp_hm_cost;
+	money += pl.perkhuckster_lvl * perkhuckster_cost;
+	money += pl.perksteal_lvl * perksteal_cost;
+	money += pl.perkresist_hm_lvl * perkresist_hm_cost;
+	money += pl.perkspeed_lvl * perkspeed_cost;
+	money += pl.perkluck_lvl * perkluck_cost;
+	money += pl.perkchameleon_lvl * perkchameleon_cost;
+	money += pl.perkresist_zm_lvl * perkresist_zm_cost;
+
+	if(money <= 0)
+		return;
+
+	money *= 1.00 - perkhuckster_maxlvl * perkhuckster_hucksterperlvl * 0.01;
+	pl.Add_money(money, false);
+
+	pl.perkhp_zm_lvl = 0;
+	pl.perkhp_hm_lvl = 0;
+	pl.perkhuckster_lvl = 0;
+	pl.perksteal_lvl = 0;
+	pl.perkresist_hm_lvl = 0;
+	pl.perkspeed_lvl = 0;
+	pl.perkluck_lvl = 0;
+	pl.perkchameleon_lvl = 0;
+	pl.perkresist_zm_lvl = 0;
+
+	local text = "All perks was been reseted";
+	ShowShopText(activator, text);
+}
+
+function BuyReRollStock()
+{
+	local pl = GetPlayerClassByHandle(activator);
+	local needmoney = null;
+
+	local money = 10;
+
+	if(pl.money >= pl.GetNewPrice(money))
+	{
+		pl.Minus_money(pl.GetNewPrice(money));
+		pl.GetNewStock();
+		local itemtext = "";
+		local stock = split(pl.person_stock_one," ");
+		if(stock.len() > 0)
+		{
+			for (local i = 0; i < stock.len(); i++)
+			{
+				if(stock[i] == "bio")itemtext += "|浮毒|";
+				else if(stock[i] == "ice")itemtext += "|冰|";
+				else if(stock[i] == "poison")itemtext += "|剧毒|";
+				else if(stock[i] == "wind")itemtext += "|风|";
+				else if(stock[i] == "summon")itemtext += "|召唤|";
+				else if(stock[i] == "electro")itemtext += "|电|";
+				else if(stock[i] == "earth")itemtext += "|土|";
+				else if(stock[i] == "gravity")itemtext += "|黑洞|";
+				else if(stock[i] == "ultimate")itemtext += "|终极|";
+				else if(stock[i] == "heal")itemtext += "|治疗|";
+			}
+		}
+		else itemtext = "你输了并没有获得任何东西"
+		local text = "你赢得了一张折扣票!\n"+itemtext+"\n\n你的余额: "+pl.money+Money_pref;
+		Fade_White(activator);
+		ShowShopText(activator, text);
+		return;
+	}
+	needmoney = pl.GetNewPrice(money);
+	local text = "你没有足够的金钱!\n你需要 "+needmoney+Money_pref+" 更多\n\n你的余额: "+pl.money+Money_pref;
+	Fade_Red(activator);
+	ShowShopText(activator, text);
+}
+
+function BuyStock()
+{
+	local pl = GetPlayerClassByHandle(activator);
+	local item_array = split(pl.person_stock_one," ");
+	local stocklen = item_array.len();
+	if(stocklen == 0)
+	{
+		Fade_Red(activator);
+		BuyStockNo(activator);
+		return;
+	}
+
+	local needmoney = 0;
+
+	local lvlprice = 0;
+	for (local i = 0; i < lvlcost.len(); i++)lvlprice += lvlcost[i];
+
+	local money = stocklen * (lvlprice - lvlprice * 0.2);
+
+	if(pl.money >= pl.GetNewPrice(money))
+	{
+		pl.Minus_money(pl.GetNewPrice(money));
+		local itemtext = "";
+
+		for (local i = 0; i < stocklen; i++)
+		{
+			if(item_array[i] == "bio")
+			{
+				pl.Set_level_bio(3);
+				itemtext += "|浮毒|";
+			}
+			else if(item_array[i] == "ice")
+			{
+				pl.Set_level_ice(3);
+				itemtext += "|冰|";
+			}
+			else if(item_array[i] == "poison")
+			{
+				pl.Set_level_poison(3);
+				itemtext += "|剧毒|";
+			}
+			else if(item_array[i] == "wind")
+			{
+				pl.Set_level_wind(3);
+				itemtext += "|风|";
+			}
+			else if(item_array[i] == "summon")
+			{
+				pl.Set_level_summon(3);
+				itemtext += "|召唤|";
+			}
+			else if(item_array[i] == "electro")
+			{
+				pl.Set_level_electro(3);
+				itemtext += "|电|";
+			}
+			else if(item_array[i] == "earth")
+			{
+				pl.Set_level_earth(3);
+				itemtext += "|土|";
+			}
+			else if(item_array[i] == "gravity")
+			{
+				pl.Set_level_gravity(3);
+				itemtext += "|黑洞|";
+			}
+			else if(item_array[i] == "ultimate")
+			{
+				pl.Set_level_ultimate(3);
+				itemtext += "|终极|";
+			}
+			else if(item_array[i] == "heal")
+			{
+				pl.Set_level_heal(3);
+				itemtext += "|治疗|";
+			}
+		}
+		if(itemtext == "")itemtext = "你输了并没有获得任何东西";
+		local text = "你赢得了一张折扣票!\n"+itemtext+"\n\n你的余额: "+pl.money+Money_pref;
+		Fade_White(activator);
+		ShowShopText(activator, text);
+		return;
+	}
+	needmoney = pl.GetNewPrice(money);
+
+	local text = "你没有足够的金钱!\n你需要 "+needmoney+Money_pref+" 更多\n\n你的余额: "+pl.money+Money_pref;
+	Fade_Red(activator);
+	ShowShopText(activator, text);
+}
+
+function BuyItemNomore(handle)
+{
+	local text = "这个物品已经没有存货!";
+	ShowShopText(handle, text);
+}
+
+function BuyItem()
+{
+	if (activator.GetTeam() != 3)
+	{
+		return Fade_Red(activator);
+	}
+
+	foreach(p in ITEM_OWNER)
+	{
+		if(p.owner == activator)
+		{
+			if (p.name_right != "Red XIII" && p.name_right != "Yuffie")
+			{
+				return Fade_Red(activator);
+			}
+		}
+	}
+
+	local name = caller.GetName();
+	local pl = GetPlayerClassByHandle(activator);
+	local needmoney = null;
+	if(name.find("ammo") != null)
+	{
+		if(item_ammo_count > 0)
+		{
+			needmoney = pl.GetNewPrice(item_ammo_cost);
+			if(pl.money >= needmoney)
+			{
+				item_ammo_count--;
+				pl.Minus_money(needmoney);
+				GetItem(TEMP_AMMO,activator);
+				local text = "你购买了弹药\n\n你的余额 "+pl.money+Money_pref;
+				Fade_White(activator);
+				ShowShopText(activator, text);
+
+				if(item_ammo_count == 0)
+					EntFire("info_glow_ammo", "SetGlowDisabled", "", 0, null);
+				return;
+			}
+		}
+		else
+		{
+			BuyItemNomore(activator);
+			return Fade_Red(activator);
+		}
+
+	}
+	else if(name.find("potion") != null)
+	{
+		if(item_potion_count > 0)
+		{
+			needmoney = pl.GetNewPrice(item_potion_cost);
+			if(pl.money >= needmoney)
+			{
+				item_potion_count--;
+				pl.Minus_money(needmoney);
+				GetItem(TEMP_POTION,activator);
+				local text = "你购买了药水\n\n你的余额 "+pl.money+Money_pref;
+				Fade_White(activator);
+				ShowShopText(activator, text);
+
+				if(item_potion_count == 0)
+					EntFire("info_glow_potion", "SetGlowDisabled", "", 0, null);
+				return;
+			}
+
+		}
+		else
+		{
+			BuyItemNomore(activator);
+			return Fade_Red(activator);
+		}
+	}
+	else if(name.find("phoenix") != null)
+	{
+		if(item_phoenix_count > 0)
+		{
+			needmoney = pl.GetNewPrice(item_phoenix_cost);
+			if(pl.money >= needmoney)
+			{
+				item_phoenix_count--;
+				pl.Minus_money(needmoney);
+				GetItem(TEMP_PHOENIX,activator);
+				local text = "你购买了菲尼克斯\n\n你的余额 "+pl.money+Money_pref;
+				Fade_White(activator);
+				ShowShopText(activator, text);
+
+				if(item_phoenix_count == 0)
+					EntFire("info_glow_phoenix", "SetGlowDisabled", "", 0, null);
+				return;
+			}
+
+		}
+		else
+		{
+			BuyItemNomore(activator);
+			return Fade_Red(activator);
+		}
+	}
+	local text = "你没有足够的金钱!\n你需要 "+needmoney+Money_pref+" 更多\n\n你的余额: "+pl.money+Money_pref;
+	Fade_Red(activator);
+	ShowShopText(activator, text);
+}
+
+function GetItem(item_temp, handle)
+{
+	local item_maker = Entities.FindByName(null, item_temp);
+	if(item_maker == null)
+		return;
+
+	local Pistol = null;
+	while((Pistol = Entities.FindByClassname(Pistol,"weapon_*")) != null)
+	{
+		if(Pistol.GetOwner() == handle)
+		{
+			if(Pistol.GetClassname() == "weapon_cz75a" ||
+			Pistol.GetClassname() == "weapon_deagle" ||
+			Pistol.GetClassname() == "weapon_elite" ||
+			Pistol.GetClassname() == "weapon_fiveseven" ||
+			Pistol.GetClassname() == "weapon_glock" ||
+			Pistol.GetClassname() == "weapon_hkp2000" ||
+			Pistol.GetClassname() == "weapon_p250" ||
+			Pistol.GetClassname() == "weapon_revolver" ||
+			Pistol.GetClassname() == "weapon_usp_silencer")
+			{
+				Pistol.Destroy();
+				break;
+			}
+		}
+	}
+
+	local handlepos = handle.GetOrigin();
+
+	local makerpos = GetSpot();
+	item_maker.SetOrigin(makerpos);
+	EntFireByHandle(item_maker, "ForceSpawn", "", 0, null, null);
+	EntFireByHandle(self, "RunScriptCode", "activator.SetOrigin(Vector(" + (makerpos.x) + "," + (makerpos.y) + "," + (makerpos.z - 5) + "));", 0, handle, handle);
+	EntFireByHandle(self, "RunScriptCode", "activator.SetOrigin(Vector(" + (handlepos.x) + "," + (handlepos.y) + "," + (handlepos.z) + "));", 0.2, handle, handle);
+}
+
+function BuyPerk()
+{
+	local name = caller.GetName();
+	local pl = GetPlayerClassByHandle(activator);
+	local needmoney = null;
+
+	if(name.find("hp_hm") != null)
+	{
+		local lvl = pl.perkhp_hm_lvl;
+		local maxlvl = perkhp_hm_maxlvl;
+		local defaultcost = perkhp_hm_cost;
+		local cost = ((lvl > maxlvl) ? (defaultcost * 2) : defaultcost);
+		needmoney = pl.GetNewPrice(cost);
+		if(pl.money >= needmoney)
+		{
+			pl.level_up_perkheal_hm();
+			pl.Minus_money(needmoney);
+
+			if(activator.GetTeam() == 3)
+			{
+				activator.SetHealth(activator.GetHealth() + perkhp_hm_hpperlvl);
+				activator.SetMaxHealth(100 + pl.perkhp_hm_lvl * perkhp_hm_hpperlvl);
+			}
+
+			local text = "你把人类生命值提升到了等级 "+pl.perkhp_hm_lvl+"\n\n你的余额 "+pl.money+Money_pref;
+			Fade_White(activator);
+			ShowShopText(activator, text);
+			return;
+		}
+	}
+	else if(name.find("hp_zm") != null)
+	{
+		local lvl = pl.perkhp_zm_lvl;
+		local maxlvl = perkhp_hm_maxlvl;
+		local defaultcost = perkhp_zm_maxlvl;
+		local cost = ((lvl > maxlvl) ? (defaultcost * 2) : defaultcost);
+		needmoney = pl.GetNewPrice(cost);
+		if(pl.money >= needmoney)
+		{
+			pl.level_up_perkheal_zm();
+			pl.Minus_money(needmoney);
+
+			if(activator.GetTeam() == 2 && activator.GetHealth() >= 600)
+			{
+				activator.SetHealth(activator.GetHealth() + perkhp_zm_hpperlvl);
+				activator.SetMaxHealth(MaxHPZombie + pl.perkhp_zm_lvl * perkhp_zm_hpperlvl);
+			}
+
+			local text = "你把僵尸生命值提升到了等级 "+pl.perkhp_zm_lvl+"\n\n你的余额 "+pl.money+Money_pref;
+			Fade_White(activator);
+			ShowShopText(activator, text);
+			return;
+		}
+
+	}
+	else if(name.find("huckster") != null)
+	{
+		local lvl = pl.perkhuckster_lvl;
+		if(lvl == perkhuckster_maxlvl)
+		{
+			Fade_Red(activator);
+			BuyPerkMax(activator)
+			return;
+		}
+		needmoney = perkhuckster_cost;
+		if(pl.money >= needmoney)
+		{
+			pl.level_up_perkhuck();
+			pl.Minus_money(needmoney);
+
+			local text = "你把讨价还价提升到了等级 "+pl.perkhuckster_lvl+"\n\n你的余额 "+pl.money+Money_pref;
+			Fade_White(activator);
+			ShowShopText(activator, text);
+			return;
+		}
+
+	}
+	else if(name.find("speed") != null)
+	{
+		local lvl = pl.perkspeed_lvl;
+		if(lvl == perkspeed_maxlvl)
+		{
+			Fade_Red(activator);
+			BuyPerkMax(activator)
+			return;
+		}
+		needmoney = pl.GetNewPrice(perkspeed_cost);
+		if(pl.money >= needmoney)
+		{
+			pl.level_up_perkspeed();
+			pl.Minus_money(needmoney);
+
+			local text = "你把僵尸速度提升到了等级 "+pl.perkspeed_lvl+"\n\n你的余额 "+pl.money+Money_pref;
+			Fade_White(activator);
+			ShowShopText(activator, text);
+			return;
+		}
+
+	}
+	else if(name.find("steal") != null)
+	{
+		local lvl = pl.perksteal_lvl;
+		if(lvl == perksteal_maxlvl)
+		{
+			Fade_Red(activator);
+			BuyPerkMax(activator)
+			return;
+		}
+		needmoney = pl.GetNewPrice(perksteal_cost);
+		if(pl.money >= needmoney)
+		{
+			pl.level_up_perksteal();
+			pl.Minus_money(needmoney);
+
+			local text = "你把窃贼提升到了等级 "+pl.perksteal_lvl+"\n\n你的余额 "+pl.money+Money_pref;
+			Fade_White(activator);
+			ShowShopText(activator, text);
+			return;
+		}
+
+	}
+	else if(name.find("chameleon") != null)
+	{
+		local lvl = pl.perkchameleon_lvl;
+		if(lvl == perkchameleon_maxlvl)
+		{
+			Fade_Red(activator);
+			BuyPerkMax(activator)
+			return;
+		}
+		needmoney = pl.GetNewPrice(perkchameleon_cost);
+		if(pl.money >= needmoney)
+		{
+			pl.level_up_perkchameleon();
+			pl.Minus_money(needmoney);
+
+			local text = "你把僵尸隐身提升到了等级 "+pl.perkchameleon_lvl+"\n\n你的余额 "+pl.money+Money_pref;
+			Fade_White(activator);
+			ShowShopText(activator, text);
+			return;
+		}
+
+	}
+	else if(name.find("resist_zm") != null)
+	{
+		local lvl = pl.perkresist_zm_lvl;
+		local maxlvl = perkresist_zm_maxlvl;
+		local defaultcost = perkresist_zm_cost;
+		local cost = ((lvl > maxlvl) ? (defaultcost * 2) : defaultcost);
+		needmoney = pl.GetNewPrice(cost);
+		if(pl.money >= needmoney)
+		{
+			pl.level_up_perkresist_zm();
+			pl.Minus_money(needmoney);
+
+			local text = "你把人类神器抵抗提升到了等级 "+pl.perkresist_zm_lvl+"\n\n你的余额 "+pl.money+Money_pref;
+			Fade_White(activator);
+			ShowShopText(activator, text);
+			return;
+		}
+	}
+	if(name.find("resist_hm") != null)
+	{
+		local lvl = pl.perkresist_hm_lvl;
+		if(lvl == perkresist_hm_maxlvl)
+		{
+			Fade_Red(activator);
+			BuyPerkMax(activator)
+			return;
+		}
+		needmoney = pl.GetNewPrice(perkresist_hm_cost);
+		if(pl.money >= needmoney)
+		{
+			pl.level_up_perkresist_hm();
+			pl.Minus_money(needmoney);
+
+			local text = "你把攻击抵抗提升到了等级 "+pl.perkresist_hm_lvl+"\n\n你的余额 "+pl.money+Money_pref;
+			Fade_White(activator);
+			ShowShopText(activator, text);
+			return;
+		}
+	}
+	else if(name.find("luck") != null)
+	{
+		local lvl = pl.perkluck_lvl;
+		if(lvl == perkluck_maxlvl)
+		{
+			Fade_Red(activator);
+			BuyPerkMax(activator)
+			return;
+		}
+		needmoney = pl.GetNewPrice(perkluck_cost);
+		if(pl.money >= needmoney)
+		{
+			pl.level_up_perkluck();
+			pl.Minus_money(needmoney);
+
+			local text = "你把幸运战士提升到了等级 "+pl.perkluck_lvl+"\n\n你的余额 "+pl.money+Money_pref;
+			Fade_White(activator);
+			ShowShopText(activator, text);
+			return;
+		}
+
+	}
+	local text = "你没有足够的金钱!\n你需要 "+needmoney+Money_pref+" 更多\n\n你的余额: "+pl.money+Money_pref;
+	Fade_Red(activator);
+	ShowShopText(activator, text);
+}
+
+function BuyLevelMax(handle)
+{
+	local text = "你已经把这个神器的等级提升到最高了";
+	ShowShopText(handle, text);
+}
+function BuyBuff()
+{
+	local name = caller.GetName();
+	local pl = GetPlayerClassByHandle(activator);
+	local needmoney = pl.GetNewPrice(Buff_cost);
+	if (CLASSIC_MOD)
+	{
+		needmoney = Buff_Classic_cost;
+	}
+
+	if(name.find("double") != null)
+	{
+		if(pl.money >= needmoney)
+		{
+			pl.Change_Buff(4);
+			pl.Minus_money(needmoney);
+			local text = "你购买了'双倍'辅助魔法\n[+]增加神器1或2的使用次数\n[-]减少神器等级的同时增加冷却时间\n\n你的余额 "+pl.money+Money_pref;
+			Fade_White(activator);
+			ShowShopText(activator, text);
+			return;
+		}
+	}
+	else if(name.find("turbo") != null)
+	{
+		if(pl.money >= needmoney)
+		{
+			pl.Change_Buff(3);
+			pl.Minus_money(needmoney);
+			local text = "你购买了'涡轮'辅助魔法\n[+]增加神器的持续时间\n[+]增加神器的冷却时间\n\n你的余额 "+pl.money+Money_pref;
+			Fade_White(activator);
+			ShowShopText(activator, text);
+			return;
+		}
+	}
+	else if(name.find("recovery") != null)
+	{
+		if(pl.money >= needmoney)
+		{
+			pl.Change_Buff(2);
+			pl.Minus_money(needmoney);
+			local text = "你购买了'回收'辅助魔法\n[-]减少神器的冷却时间\n[-]减少神器的持续时间\n\n你的余额 "+pl.money+Money_pref;
+			Fade_White(activator);
+			ShowShopText(activator, text);
+			return;
+		}
+	}
+	else if(name.find("last") != null)
+	{
+		if(pl.money >= needmoney)
+		{
+			pl.Change_Buff(1);
+			pl.Minus_money(needmoney);
+			local text = "你购买了'最后的攻击'辅助魔法\n[+]持有神器的同时缓慢恢复生命值\n[-]死亡的时候使用一次神器\n\n你的余额 "+pl.money+Money_pref;
+			Fade_White(activator);
+			ShowShopText(activator, text);
+			return;
+		}
+	}
+	else if(name.find("radius") != null)
+	{
+		if(pl.money >= needmoney)
+		{
+			pl.Change_Buff(0);
+			pl.Minus_money(needmoney);
+			local text = "你购买了'唯一'辅助魔法\n[+]增加神器的范围\n[-]减少神器的伤害\n\n你的余额 "+pl.money+Money_pref;
+			Fade_White(activator);
+			ShowShopText(activator, text);
+			return;
+		}
+	}
+
+	local text = "你没有足够的金钱!\n你需要 "+needmoney+Money_pref+" 更多\n\n你的余额: "+pl.money+Money_pref;
+	Fade_Red(activator);
+	ShowShopText(activator, text);
+}
+
+function BuyLevelUpItem()
+{
+	local name = caller.GetName();
+	local pl = GetPlayerClassByHandle(activator);
+	local needmoney = null;
+
+	if(name.find("bio") != null)
+	{
+		local lvl = pl.bio_lvl;
+		if(lvl == 3)
+		{
+			Fade_Red(activator);
+		 	BuyLevelMax(activator)
+			return
+		}
+		if(pl.money >= pl.GetNewPrice(lvlcost[lvl]))
+		{
+			pl.level_up_bio();
+			pl.Minus_money(pl.GetNewPrice(lvlcost[lvl]));
+			local text = "你把浮毒神器提升到了等级 "+pl.bio_lvl+" \n\n你的余额 "+pl.money+Money_pref;
+			Fade_White(activator);
+			ShowShopText(activator, text);
+			return;
+		}
+		needmoney = pl.GetNewPrice(lvlcost[lvl]);
+	}
+	else if(name.find("ice") != null)
+	{
+		local lvl = pl.ice_lvl;
+		if(lvl == 3)
+		{
+			Fade_Red(activator);
+		 	BuyLevelMax(activator)
+			return
+		}
+		if(pl.money >= pl.GetNewPrice(lvlcost[lvl]))
+		{
+			pl.level_up_ice();
+			pl.Minus_money(pl.GetNewPrice(lvlcost[lvl]));
+			local text = "你把冰神器提升到了等级 "+pl.ice_lvl+" \n\n你的余额 "+pl.money+Money_pref;
+			Fade_White(activator);
+			ShowShopText(activator, text);
+			return;
+		}
+		needmoney = pl.GetNewPrice(lvlcost[lvl]);
+	}
+	else if(name.find("poison") != null)
+	{
+		local lvl = pl.poison_lvl;
+		if(lvl == 3)
+		{
+			Fade_Red(activator);
+		 	BuyLevelMax(activator)
+			return
+		}
+		if(pl.money >= pl.GetNewPrice(lvlcost[lvl]))
+		{
+			pl.level_up_poison();
+			pl.Minus_money(pl.GetNewPrice(lvlcost[lvl]));
+			local text = "你把剧毒神器提升到了等级 "+pl.poison_lvl+" \n\n你的余额 "+pl.money+Money_pref;
+			Fade_White(activator);
+			ShowShopText(activator, text);
+			return;
+		}
+		needmoney = pl.GetNewPrice(lvlcost[lvl]);
+	}
+	else if(name.find("wind") != null)
+	{
+		local lvl = pl.wind_lvl;
+		if(lvl == 3)
+		{
+			Fade_Red(activator);
+		 	BuyLevelMax(activator)
+			return
+		}
+		if(pl.money >= pl.GetNewPrice(lvlcost[lvl]))
+		{
+			pl.level_up_wind();
+			pl.Minus_money(pl.GetNewPrice(lvlcost[lvl]));
+			local text = "你把风神器提升到了等级 "+pl.wind_lvl+" \n\n你的余额 "+pl.money+Money_pref;
+			Fade_White(activator);
+			ShowShopText(activator, text);
+			return;
+		}
+		needmoney = pl.GetNewPrice(lvlcost[lvl]);
+	}
+	else if(name.find("summon") != null)
+	{
+		local lvl = pl.summon_lvl;
+		if(lvl == 3)
+		{
+			Fade_Red(activator);
+		 	BuyLevelMax(activator)
+			return
+		}
+		if(pl.money >= pl.GetNewPrice(lvlcost[lvl]))
+		{
+			pl.level_up_summon();
+			pl.Minus_money(pl.GetNewPrice(lvlcost[lvl]));
+			local text = "你把召唤神器提升到了等级 "+pl.summon_lvl+" \n\n你的余额 "+pl.money+Money_pref;
+			Fade_White(activator);
+			ShowShopText(activator, text);
+			return;
+		}
+		needmoney = pl.GetNewPrice(lvlcost[lvl]);
+	}
+	else if(name.find("fire") != null)
+	{
+		local lvl = pl.fire_lvl;
+		if(lvl == 3)
+		{
+			Fade_Red(activator);
+		 	BuyLevelMax(activator)
+			return
+		}
+		if(pl.money >= pl.GetNewPrice(lvlcost[lvl]))
+		{
+			pl.level_up_fire();
+			pl.Minus_money(pl.GetNewPrice(lvlcost[lvl]));
+			local text = "你把火神器提升到了等级 "+pl.fire_lvl+" \n\n你的余额 "+pl.money+Money_pref;
+			Fade_White(activator);
+			ShowShopText(activator, text);
+			return;
+		}
+		needmoney = pl.GetNewPrice(lvlcost[lvl]);
+	}
+	else if(name.find("electro") != null)
+	{
+		local lvl = pl.electro_lvl;
+		if(lvl == 3)
+		{
+			Fade_Red(activator);
+		 	BuyLevelMax(activator)
+			return
+		}
+		if(pl.money >= pl.GetNewPrice(lvlcost[lvl]))
+		{
+			pl.level_up_electro();
+			pl.Minus_money(pl.GetNewPrice(lvlcost[lvl]));
+			local text = "你把电神器提升到了等级 "+pl.electro_lvl+" \n\n你的余额 "+pl.money+Money_pref;
+			Fade_White(activator);
+			ShowShopText(activator, text);
+			return;
+		}
+		needmoney = pl.GetNewPrice(lvlcost[lvl]);
+	}
+	else if(name.find("earth") != null)
+	{
+		local lvl = pl.earth_lvl;
+		if(lvl == 3)
+		{
+			Fade_Red(activator);
+		 	BuyLevelMax(activator)
+			return
+		}
+		if(pl.money >= pl.GetNewPrice(lvlcost[lvl]))
+		{
+			pl.level_up_earth();
+			pl.Minus_money(pl.GetNewPrice(lvlcost[lvl]));
+			local text = "你把土神器提升到了等级 "+pl.earth_lvl+" \n\n你的余额 "+pl.money+Money_pref;
+			Fade_White(activator);
+			ShowShopText(activator, text);
+			return;
+		}
+		needmoney = pl.GetNewPrice(lvlcost[lvl]);
+	}
+	else if(name.find("gravity") != null)
+	{
+		local lvl = pl.gravity_lvl;
+		if(lvl == 3)
+		{
+			Fade_Red(activator);
+		 	BuyLevelMax(activator)
+			return
+		}
+		if(pl.money >= pl.GetNewPrice(lvlcost[lvl]))
+		{
+			pl.level_up_gravity();
+			pl.Minus_money(pl.GetNewPrice(lvlcost[lvl]));
+			local text = "你把黑洞神器提升到了等级 "+pl.gravity_lvl+" \n\n你的余额 "+pl.money+Money_pref;
+			Fade_White(activator);
+			ShowShopText(activator, text);
+			return;
+		}
+		needmoney = pl.GetNewPrice(lvlcost[lvl]);
+	}
+	else if(name.find("ultimate") != null)
+	{
+		local lvl = pl.ultimate_lvl;
+		if(lvl == 3)
+		{
+			Fade_Red(activator);
+		 	BuyLevelMax(activator)
+			return
+		}
+		if(pl.money >= pl.GetNewPrice(lvlcost[lvl]))
+		{
+			pl.level_up_ultimate();
+			pl.Minus_money(pl.GetNewPrice(lvlcost[lvl]));
+			local text = "你把终极神器提升到了等级 "+pl.ultimate_lvl+" \n\n你的余额 "+pl.money+Money_pref;
+			Fade_White(activator);
+			ShowShopText(activator, text);
+			return;
+		}
+		needmoney = pl.GetNewPrice(lvlcost[lvl]);
+	}
+	else if(name.find("heal") != null)
+	{
+		local lvl = pl.heal_lvl;
+		if(lvl == 3)
+		{
+			Fade_Red(activator);
+		 	BuyLevelMax(activator)
+			return
+		}
+		if(pl.money >= pl.GetNewPrice(lvlcost[lvl]))
+		{
+			pl.level_up_heal();
+			pl.Minus_money(pl.GetNewPrice(lvlcost[lvl]));
+			local text = "你把治疗神器提升到了等级 "+pl.heal_lvl+" \n\n你的余额 "+pl.money+Money_pref;
+			Fade_White(activator);
+			ShowShopText(activator, text);
+			return;
+		}
+		needmoney = pl.GetNewPrice(lvlcost[lvl]);
+	}
+	local text = "你没有足够的金钱!\n你需要 "+needmoney+Money_pref+" 更多\n\n你的余额: "+pl.money+Money_pref;
+	ShowShopText(activator, text);
+	Fade_Red(activator);
+}
+
+function AddCash(i,a = 0)
+{
+	local pl = GetPlayerClassByHandle(activator);
+	local money = 0;
+	if(a == 0)money = i;
+	else
+	{
+		local lvl_luck = pl.perkluck_lvl
+		if(lvl_luck > 0)money = RandomInt(i+  a * lvl_luck * perkluck_luckperlvl * 0.01,a + a * lvl_luck * perkluck_luckperlvl * 0.002);
+		else money = RandomInt(i,a);
+	}
+	pl.Add_money(money);
+}
+
+function AddCashAll(i, TEAM = -1)
+{
+	local alive = true;
+	if(TEAM != -1 && TEAM < 0)
+	{
+		alive = false;
+		TEAM * -1;
+	}
+
+	foreach(pl in PLAYERS)
+	{
+		if(TEAM == -1)
+		{
+			pl.Add_money(i);
+		}
+
+		else if(pl.handle != null && pl.handle.IsValid() && pl.handle.GetTeam() == TEAM)
+		{
+			if(alive)
+			{
+				if(pl.handle.GetHealth() <= 0)
+					continue;
+			}
+
+			pl.Add_money(i);
+		}
+	}
+}
+
+function RemoveCash(i)
+{
+	local pl = GetPlayerClassByHandle(activator);
+	pl.Minus_money(i);
+}
+
+function BuyPerkMax(handle)
+{
+	local text = "你已经把这个能力的等级提升到最高了";
+	ShowShopText(handle, text);
+}
+
+function BuyStockNo(handle)
+{
+	local text = "空工具箱";
+	ShowShopText(handle, text);
+}
+
+function Fade_Poison(handle)
+{
+	EntFire("Poison_fade", "Fade", "", 0, handle);
+}
+
+function Fade_Black(handle)
+{
+	EntFire("travel_fade", "Fade", "", 0, handle);
+}
+
+function Fade_Red(handle)
+{
+	EntFire("fade_red", "Fade", "", 0, handle);
+}
+
+function Fade_White(handle)
+{
+	EntFire("fade_white", "Fade", "", 0, handle);
+}
+
+function InfoPerk()
+{
+	local name = caller.GetName();
+	local pl = GetPlayerClassByHandle(activator);
+	local perktext = "";
+	local lvl = 0;
+	local lvlMax = 0;
+	local price = 0;
+	if(name.find("hp_hm") != null){lvl = pl.perkhp_hm_lvl;lvlMax = 400;price = pl.GetNewPrice(((lvl > 400) ? (perkhp_hm_maxlvl * 2) : perkhp_hm_maxlvl));perktext += "Human HP";}
+	else if(name.find("hp_zm") != null){lvl = pl.perkhp_zm_lvl;lvlMax = 400;price = pl.GetNewPrice(((lvl > 400) ? (perkhp_zm_maxlvl * 2) : perkhp_zm_maxlvl));perktext += "Zombie HP";}
+	else if(name.find("huckster") != null){lvl = pl.perkhuckster_lvl;lvlMax = perkhuckster_maxlvl;price = perkhuckster_cost;perktext += "Huckster";}
+	else if(name.find("speed") != null){lvl = pl.perkspeed_lvl;lvlMax = perkspeed_maxlvl;price = pl.GetNewPrice(perkspeed_cost);perktext += "Zombie Speed";}
+	else if(name.find("steal") != null){lvl = pl.perksteal_lvl;lvlMax = perksteal_maxlvl;price = pl.GetNewPrice(perksteal_cost);perktext += "Thief";}
+	else if(name.find("chameleon") != null){lvl = pl.perkchameleon_lvl;lvlMax = perkchameleon_maxlvl;price = pl.GetNewPrice(perkchameleon_cost);perktext += "Zombie Chameleon";}
+	else if(name.find("resist_zm") != null){lvl = pl.perkresist_zm_lvl;lvlMax = 50;price = pl.GetNewPrice(((lvl > 400) ? (perkresist_zm_cost * 2) : perkresist_zm_cost));perktext += "Human Materia Resist";}
+	else if(name.find("resist_hm") != null){lvl = pl.perkresist_hm_lvl;lvlMax = perkresist_hm_maxlvl;price = pl.GetNewPrice(perkresist_hm_cost);perktext += "Attack Resist";}
+	else if(name.find("luck") != null){lvl = pl.perkluck_lvl;lvlMax = perkluck_maxlvl;price = pl.GetNewPrice(perkluck_cost);perktext += "Lucky Warrior";}
+	perktext += " ["+lvl+"/"+lvlMax+"]\n";
+	if(lvl == lvlMax)perktext += "You can't upgrade anymore";
+	else perktext += "Upgrade will cost "+ConvertPrice(price)+Money_pref;
+	local text = "等级 "+perktext+"\n\n你的余额 "+pl.money+Money_pref;
+	ShowShopText(activator, text);
+
+}
+
+::ConvertPrice <- function(money)
+{
+	if (typeof money == "float")
+	{
+		money = format("%.2f", money).tofloat();
+	}
+	return money;
+}
+
+function InfoBuffReset()
+{
+	local pl = GetPlayerClassByHandle(activator);
+	local text = "重置辅助魔法\n\n你的余额 "+pl.money+Money_pref;
+	ShowShopText(activator, text);
+}
+
+function InfoBuff()
+{
+	local name = caller.GetName();
+	local pl = GetPlayerClassByHandle(activator);
+	local bufftext = "";
+	local infotext = "";
+	local needmoney = pl.GetNewPrice(Buff_cost);
+	if (CLASSIC_MOD)
+	{
+		needmoney = Buff_Classic_cost;
+	}
+
+	if(pl.item_buff_radius)
+		bufftext += "r 辅助魔法是'唯一'\n替换 ";
+	else if(pl.item_buff_last)
+		bufftext += "r 辅助魔法是'最后的攻击'\n替换 ";
+	else if(pl.item_buff_recovery)
+		bufftext += "r 辅助魔法是'回收'\n替换 ";
+	else if(pl.item_buff_turbo)
+		bufftext += "r 辅助魔法是'涡轮'\n替换 ";
+	else if(pl.item_buff_doble)
+		bufftext += "r 辅助魔法是'双倍'\n替换 ";
+	else
+		bufftext += " 没有一个辅助魔法\n购买 ";
+
+	if(name.find("double") != null)
+	{
+		bufftext += "'双倍'";
+		infotext += "[+]增加神器1或2的使用次数\n[-]减少神器等级的同时增加冷却时间";
+	}
+	else if(name.find("turbo") != null)
+	{
+		bufftext += "'涡轮'";
+		infotext += "[+]增加神器的持续时间\n[+]增加神器的冷却时间";
+	}
+	else if(name.find("recovery") != null)
+	{
+		bufftext += "'回收'";
+		infotext += "[-]减少神器的冷却时间\n[-]减少神器的持续时间";
+	}
+	else if(name.find("last") != null)
+	{
+		bufftext += "'最后的攻击'";
+		infotext += "[+]持有神器的同时缓慢恢复生命值\n[-]死亡的时候使用一次神器";
+	}
+	else if(name.find("radius") != null)
+	{
+		bufftext += "'唯一'";
+		infotext += "[+]增加神器的范围\n[-]减少神器的伤害";
+	}
+	local text = "你"+bufftext+" 将要花费 "+pl.GetNewPrice(Buff_cost)+Money_pref+"\n"+infotext+"\n\n你的余额 "+pl.money+Money_pref;
+	ShowShopText(activator, text);
+}
+
+function InfoBuffItem()
+{
+	local name = caller.GetName();
+	local pl = GetPlayerClassByHandle(activator);
+	local itemtext = "";
+	local canbuy;
+	local cost;
+	local limit;
+	local count;
+	if(name.find("ammo") != null){itemtext += "弹药";cost = pl.GetNewPrice(item_ammo_cost);count = item_ammo_count;limit = item_ammo_countB;}
+	else if(name.find("potion") != null){itemtext += "药水";cost = pl.GetNewPrice(item_potion_cost);count = item_potion_count;limit = item_potion_countB;}
+	else if(name.find("phoenix") != null){itemtext += "菲尼克斯";cost = pl.GetNewPrice(item_phoenix_cost);count = item_phoenix_count;limit = item_phoenix_countB;}
+	if(count <= 0)canbuy = "这回合你不能购买更多了";
+	else canbuy = "购买 "+itemtext+" 将要花费 "+ConvertPrice(cost)+Money_pref
+	local text = "物品 "+itemtext+" - "+count+" 剩余\n"+canbuy+"\n\n你的余额 "+pl.money+Money_pref;
+	ShowShopText(activator, text);
+}
+
+function InfoItem()
+{
+	local name = caller.GetName();
+	local pl = GetPlayerClassByHandle(activator);
+	local itemtext = "";
+	local lvl = "";
+	if(name.find("bio") != null){lvl = pl.bio_lvl;itemtext += "浮毒";}
+	else if(name.find("ice") != null){lvl = pl.ice_lvl;itemtext += "冰";}
+	else if(name.find("poison") != null){lvl = pl.poison_lvl;itemtext += "剧毒";}
+	else if(name.find("wind") != null){lvl = pl.wind_lvl;itemtext += "风";}
+	else if(name.find("summon") != null){lvl = pl.summon_lvl;itemtext += "召唤";}
+	else if(name.find("fire") != null){lvl = pl.fire_lvl;itemtext += "火";}
+	else if(name.find("electro") != null){lvl = pl.electro_lvl;itemtext += "电";}
+	else if(name.find("earth") != null){lvl = pl.earth_lvl;itemtext += "土";}
+	else if(name.find("gravity") != null){lvl = pl.gravity_lvl;itemtext += "黑洞";}
+	else if(name.find("ultimate") != null){lvl = pl.ultimate_lvl;itemtext += "终极";}
+	else if(name.find("heal") != null){lvl = pl.heal_lvl;itemtext += "治疗";}
+	itemtext += " 神器 ["+lvl+"/"+MaxLevel+"]\n";
+	if(lvl == MaxLevel)itemtext += "你不能再升级了";
+	else itemtext += "升级将要花费 "+ConvertPrice(pl.GetNewPrice(lvlcost[lvl]))+Money_pref;
+	local text = "等级 "+itemtext+"\n\n你的余额 "+pl.money+Money_pref;
+	ShowShopText(activator, text);
+}
+
+function InfoStock()
+{
+	//local name = caller.GetName();
+	local pl = GetPlayerClassByHandle(activator);
+	local stock = split(pl.person_stock_one," ");
+	if(stock.len() == 0)return BuyStockNo(activator);
+	local itemtext = "";
+
+	local lvlprice = 0;
+	for (local i = 0; i < lvlcost.len(); i++)lvlprice += lvlcost[i];
+	local money = stock.len() * (lvlprice - lvlprice * 0.2);
+
+	for (local i = 0; i < stock.len(); i++)
+	{
+		if(stock[i] == "bio")itemtext += "|浮毒|";
+		else if(stock[i] == "ice")itemtext += "|冰|";
+		else if(stock[i] == "poison")itemtext += "|剧毒|";
+		else if(stock[i] == "wind")itemtext += "|风|";
+		else if(stock[i] == "summon")itemtext += "|召唤|";
+		else if(stock[i] == "electro")itemtext += "|电|";
+		else if(stock[i] == "earth")itemtext += "|土|";
+		else if(stock[i] == "gravity")itemtext += "|黑洞|";
+		else if(stock[i] == "ultimate")itemtext += "|终极|";
+		else if(stock[i] == "heal")itemtext += "|治疗|";
+	}
+	local text = "你的个人新折扣花费 "+ConvertPrice(pl.GetNewPrice(money))+Money_pref+"\n"+itemtext+"\n\n你的余额 "+pl.money+Money_pref;
+	ShowShopText(activator, text);
+}
+
+///////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////
+//Item manager
+function LevelUpItem()
+{
+	local name = caller.GetName();
+	local pl = GetPlayerClassByHandle(activator);
+
+	if(name.find("bio") != null)
+	{
+		if(pl.level_up_bio())
+			EntFireByHandle(caller, "AddOutPut", "OnUser1 map_brush:RunScriptCode:LevelUpItem():0:1", 0.05, null, null);
+	}
+	else if(name.find("ice") != null)
+	{
+		if(pl.level_up_ice())
+			EntFireByHandle(caller, "AddOutPut", "OnUser1 map_brush:RunScriptCode:LevelUpItem():0:1", 0.05, null, null);
+	}
+	else if(name.find("poison") != null)
+	{
+		if(pl.level_up_poison())
+			EntFireByHandle(caller, "AddOutPut", "OnUser1 map_brush:RunScriptCode:LevelUpItem():0:1", 0.05, null, null);
+	}
+	else if(name.find("wind") != null)
+	{
+		if(pl.level_up_wind())
+			EntFireByHandle(caller, "AddOutPut", "OnUser1 map_brush:RunScriptCode:LevelUpItem():0:1", 0.05, null, null);
+	}
+	else if(name.find("summon") != null)
+	{
+		if(pl.level_up_summon())
+			EntFireByHandle(caller, "AddOutPut", "OnUser1 map_brush:RunScriptCode:LevelUpItem():0:1", 0.05, null, null);
+	}
+	else if(name.find("fire") != null)
+	{
+		if(pl.level_up_fire())
+			EntFireByHandle(caller, "AddOutPut", "OnUser1 map_brush:RunScriptCode:LevelUpItem():0:1", 0.05, null, null);
+	}
+	else if(name.find("electro") != null)
+	{
+		if(pl.level_up_electro())
+			EntFireByHandle(caller, "AddOutPut", "OnUser1 map_brush:RunScriptCode:LevelUpItem():0:1", 0.05, null, null);
+	}
+	else if(name.find("earth") != null)
+	{
+		if(pl.level_up_earth())
+			EntFireByHandle(caller, "AddOutPut", "OnUser1 map_brush:RunScriptCode:LevelUpItem():0:1", 0.05, null, null);
+	}
+	else if(name.find("gravity") != null)
+	{
+		if(pl.level_up_gravity())
+			EntFireByHandle(caller, "AddOutPut", "OnUser1 map_brush:RunScriptCode:LevelUpItem():0:1", 0.05, null, null);
+	}
+	else if(name.find("ultimate") != null)
+	{
+		if(pl.level_up_ultimate())
+			EntFireByHandle(caller, "AddOutPut", "OnUser1 map_brush:RunScriptCode:LevelUpItem():0:1", 0.05, null, null);
+	}
+	else if(name.find("heal") != null)
+	{
+		if(pl.level_up_heal())
+			EntFireByHandle(caller, "AddOutPut", "OnUser1 map_brush:RunScriptCode:LevelUpItem():0:1", 0.05, null, null);
+	}
+}
+
+function PickUpItem()
+{
+	local name = caller.GetName();
+	local pl = GetPlayerClassByHandle(activator);
+	local lvl = 1;
+	local color = ::GREEN;
+	local item_name = "";
+	local text = "物品: ";
+	local havesupport = true;
+
+	local postfix = GetItemByName(caller.GetName().slice(caller.GetPreTemplateName().len(),caller.GetName().len()))
+	postfix.NewOwner(pl);
+
+	if(name.find("bio") != null)
+	{
+		lvl = pl.bio_lvl;
+		local item = GetItemPresetByName("bio");
+		if (CLASSIC_MOD)
+		{
+			lvl = 3;
+		}
+		if(lvl == 0)
+		{
+			lvl++;
+		}
+
+		for(local i = 1; i <= lvl;i++)
+		{
+			EntFire("item_star"+i+"_bio"+postfix.name, "Enable", "", 0, null);
+		}
+
+		text += "浮毒";
+		text += "\n等级: "+lvl.tostring();
+		text += "\n效果: "+item.effect;
+		text += "\n范围: "+item.GetRadius(lvl);
+		if(pl.item_buff_radius)
+		{
+			text += " + "+ (item.GetRadius(lvl) * 1.3).tostring();
+		}
+
+		text += "\n持续时间: "+item.GetDuration(lvl);
+		if(pl.item_buff_turbo)
+		{
+			text += " + 1";
+		}
+		text += " 秒";
+		text += "\nCD: "+item.GetCD(lvl);
+		if(pl.item_buff_recovery)
+		{
+			text += " - 10";
+		}
+
+		text += " 秒";
+		text += "\n伤害: "+item.GetDamage(lvl);
+
+		item_name = "\x0A 浮毒\x01 ";
+
+	}
+	else if(name.find("ice") != null)
+	{
+		lvl = pl.ice_lvl;
+		local item = GetItemPresetByName("ice");
+
+		if (CLASSIC_MOD)
+		{
+			lvl = 3;
+		}
+		if(lvl == 0)
+		{
+			lvl++;
+		}
+
+		for(local i = 1; i <= lvl;i++)
+		{
+			EntFire("item_star"+i+"_ice"+postfix.name, "Enable", "", 0, null);
+		}
+
+		text += "冰";
+		text += "\n等级: "+lvl.tostring();
+		text += "\n效果: "+item.effect;
+		text += "\n范围: "+item.GetRadius(lvl);
+
+		if(pl.item_buff_radius)
+		{
+			text += " + "+ (item.GetRadius(lvl) * 1.3).tostring();
+		}
+
+		text += "\n持续时间: "+item.GetDuration(lvl);
+		if(pl.item_buff_turbo)
+		{
+			text += " + 1";
+		}
+		text += " 秒";
+		text += "\nCD: "+item.GetCD(lvl);
+		if(pl.item_buff_recovery)
+		{
+			text += " - 10";
+		}
+		text += " 秒";
+
+		item_name = "\x0B 冰\x01 ";
+	}
+	else if(name.find("poison") != null)
+	{
+		lvl = pl.poison_lvl;
+		local item = GetItemPresetByName("poison");
+
+		if (CLASSIC_MOD)
+		{
+			lvl = 3;
+		}
+		if(lvl == 0)
+		{
+			lvl++;
+		}
+
+		for(local i = 1; i <= lvl;i++)
+		{
+			EntFire("item_star"+i+"_poison"+postfix.name, "Enable", "", 0, null);
+		}
+
+
+		text += "剧毒";
+		text += "\n等级: "+lvl.tostring();
+		text += "\n效果: "+item.effect;
+		text += "\n范围: "+item.GetRadius(lvl);
+		if(pl.item_buff_radius)
+		{
+			text += " + "+ (item.GetRadius(lvl) * 1.3).tostring();
+		}
+		text += "\n持续时间: "+item.GetDuration(lvl);
+		if(pl.item_buff_turbo)
+		{
+			text += " + 1";
+		}
+		text += " 秒";
+		text += "\nCD: "+item.GetCD(lvl);
+		if(pl.item_buff_recovery)
+		{
+			text += " - 10";
+		}
+
+		text += " 秒";
+		text += "\n伤害: "+item.GetDamage(lvl);
+
+		item_name = "\x06 剧毒\x01 ";
+	}
+	else if(name.find("wind") != null)
+	{
+		lvl = pl.wind_lvl;
+		local item = GetItemPresetByName("wind");
+
+		if (CLASSIC_MOD)
+		{
+			lvl = 3;
+		}
+		if(lvl == 0)
+		{
+			lvl++;
+		}
+
+		for(local i = 1; i <= lvl;i++)
+		{
+			EntFire("item_star"+i+"_wind"+postfix.name, "Enable", "", 0, null);
+		}
+
+		text += "风";
+		text += "\n等级: "+lvl.tostring();
+		text += "\n效果: "+item.effect;
+		text += "\n范围: "+item.GetRadius(lvl);
+		if(pl.item_buff_radius)
+		{
+			text += " + "+ (item.GetRadius(lvl) * 1.3).tostring();
+		}
+		text += "\n持续时间: "+item.GetDuration(lvl);
+		if(pl.item_buff_turbo)
+		{
+			text += " + 1";
+		}
+		text += " 秒";
+		text += "\nCD: "+item.GetCD(lvl);
+		if(pl.item_buff_recovery)
+		{
+			text += " - 10";
+		}
+
+		text += " 秒";
+
+		item_name = "\x05 风\x01 ";
+	}
+	else if(name.find("summon") != null)
+	{
+		lvl = pl.summon_lvl;
+		local item = GetItemPresetByName("summon");
+
+		if (CLASSIC_MOD)
+		{
+			lvl = 3;
+		}
+		if(lvl == 0)
+		{
+			lvl++;
+		}
+
+		for(local i = 1; i <= lvl;i++)
+		{
+			EntFire("item_star"+i+"_summon"+postfix.name, "Enable", "", 0, null);
+		}
+		text += "召唤";
+		text += "\n等级: "+lvl.tostring();
+		text += "\n效果: "+item.effect;
+		text += "\n范围: "+item.GetRadius(lvl);
+		if(pl.item_buff_radius)
+		{
+			text += " + "+ (item.GetRadius(lvl) * 1.3).tostring();
+		}
+		text += "\n持续时间: "+item.GetDuration(lvl);
+		if(pl.item_buff_turbo)
+		{
+			text += " + 1";
+		}
+		text += " 秒";
+		text += "\nCD: "+item.GetCD(lvl);
+		if(pl.item_buff_recovery)
+		{
+			text += " - 10";
+		}
+
+		text += " 秒";
+
+		item_name = "\x09 召唤\x01 ";
+	}
+	else if(name.find("fire") != null)
+	{
+		lvl = pl.fire_lvl;
+		local item = GetItemPresetByName("fire");
+
+		if (CLASSIC_MOD)
+		{
+			lvl = 3;
+		}
+		if(lvl == 0)
+		{
+			lvl++;
+		}
+		for(local i = 1; i <= lvl;i++)
+		{
+			EntFire("item_star"+i+"_fire"+postfix.name, "Enable", "", 0, null);
+		}
+
+		text += "火";
+		text += "\n等级: "+lvl.tostring();
+		text += "\n效果: "+item.effect;
+		text += "\n范围: "+item.GetRadius(lvl);
+		if(pl.item_buff_radius)
+		{
+			text += " + "+ (item.GetRadius(lvl) * 1.3).tostring();
+		}
+		text += "\n持续时间: "+item.GetDuration(lvl);
+		if(pl.item_buff_turbo)
+		{
+			text += " + 1";
+		}
+		text += " 秒";
+		text += "\nCD: "+item.GetCD(lvl);
+		if(pl.item_buff_recovery)
+		{
+			text += " - 10";
+		}
+
+		text += " 秒";
+		text += "\n伤害: "+item.GetDamage(lvl);
+
+		item_name = "\x02 火\x01 ";
+	}
+	else if(name.find("electro") != null)
+	{
+		lvl = pl.electro_lvl;
+		local item = GetItemPresetByName("electro");
+
+		if (CLASSIC_MOD)
+		{
+			lvl = 3;
+		}
+		if(lvl == 0)
+		{
+			lvl++;
+		}
+
+		for(local i = 1; i <= lvl;i++)
+		{
+			EntFire("item_star"+i+"_electro"+postfix.name, "Enable", "", 0, null);
+		}
+		text += "电";
+		text += "\n等级: "+lvl.tostring();
+		text += "\n效果: "+item.effect;
+		text += "\n范围: "+item.GetRadius(lvl);
+		if(pl.item_buff_radius)
+		{
+			text += " + "+ (item.GetRadius(lvl) * 1.3).tostring();
+		}
+		text += "\n持续时间: "+item.GetDuration(lvl);
+		if(pl.item_buff_turbo)
+		{
+			text += " + 1";
+		}
+		text += " 秒";
+		text += "\nCD: "+item.GetCD(lvl);
+		if(pl.item_buff_recovery)
+		{
+			text += " - 10";
+		}
+
+		text += " 秒";
+		text += "\n伤害: "+item.GetDamage(lvl);
+
+		item_name = "\x0C 电 \x01 ";
+	}
+	else if(name.find("earth") != null)
+	{
+		lvl = pl.earth_lvl;
+		local item = GetItemPresetByName("earth");
+
+		if (CLASSIC_MOD)
+		{
+			lvl = 3;
+		}
+		if(lvl == 0)
+		{
+			lvl++;
+		}
+
+		for(local i = 1; i <= lvl;i++)
+		{
+			EntFire("item_star"+i+"_earth"+postfix.name, "Enable", "", 0, null);
+		}
+
+		text += "土";
+		text += "\n等级: "+lvl.tostring();
+		text += "\n效果: "+item.effect;
+		text += "\n范围: "+item.GetRadius(lvl);
+		if(pl.item_buff_radius)
+		{
+			text += " + "+ (item.GetRadius(lvl) * 1.3).tostring();
+		}
+		text += "\n持续时间: "+item.GetDuration(lvl);
+		if(pl.item_buff_turbo)
+		{
+			text += " + 1";
+		}
+		text += " 秒";
+		text += "\nCD: "+item.GetCD(lvl);
+		if(pl.item_buff_recovery)
+		{
+			text += " - 10";
+		}
+		text += " 秒";
+
+		item_name = "\x10 土\x01 ";
+	}
+	else if(name.find("gravity") != null)
+	{
+		lvl = pl.gravity_lvl;
+		local item = GetItemPresetByName("gravity");
+
+		if (CLASSIC_MOD)
+		{
+			lvl = 3;
+		}
+		if(lvl == 0)
+		{
+			lvl++;
+		}
+
+		for(local i = 1; i <= lvl;i++)
+		{
+			EntFire("item_star"+i+"_gravity"+postfix.name, "Enable", "", 0, null);
+		}
+		text += "黑洞";
+		text += "\n等级: "+lvl.tostring();
+		text += "\n效果: "+item.effect;
+		text += "\n范围: "+item.GetRadius(lvl);
+		if(pl.item_buff_radius)
+		{
+			text += " + "+ (item.GetRadius(lvl) * 1.3).tostring();
+		}
+		text += "\n持续时间: "+item.GetDuration(lvl);
+		if(pl.item_buff_turbo)
+		{
+			text += " + 1";
+		}
+		text += " 秒";
+		text += "\nCD: "+item.GetCD(lvl);
+		if(pl.item_buff_recovery)
+		{
+			text += " - 10";
+		}
+
+		text += " 秒";
+		text += "\n伤害: "+item.GetDamage(lvl);
+
+		item_name = "\x0E 黑洞\x01 ";
+	}
+	else if(name.find("ultimate") != null)
+	{
+		lvl = pl.ultimate_lvl;
+		local item = GetItemPresetByName("ultimate");
+
+		if (CLASSIC_MOD)
+		{
+			lvl = 3;
+		}
+		if(lvl == 0)
+		{
+			lvl++;
+		}
+
+		for(local i = 1; i <= lvl;i++)
+		{
+			EntFire("item_star"+i+"_ultimate"+postfix.name, "Enable", "", 0, null);
+		}
+		text += "终极";
+		text += "\n等级: "+lvl.tostring();
+		text += "\n效果: "+item.effect;
+		text += "\n范围: "+item.GetRadius(lvl);
+		if(pl.item_buff_radius)
+		{
+			text += " + "+ (item.GetRadius(lvl) * 1.3).tostring();
+		}
+		text += "\n持续时间: "+item.GetDuration(lvl);
+		if(pl.item_buff_turbo)
+		{
+			text += " - 1";
+		}
+
+		text += " 秒";
+		text += "\n伤害: "+item.GetDamage(lvl)+"% - "+item.GetTime(lvl);
+		item_name = "\x04 终极\x01 ";
+	}
+	else if(name.find("heal") != null)
+	{
+		lvl = pl.heal_lvl;
+		local item = GetItemPresetByName("heal");
+
+		if (CLASSIC_MOD)
+		{
+			lvl = 3;
+		}
+		if(lvl == 0)
+		{
+			lvl++;
+		}
+
+		for(local i = 1; i <= lvl;i++)
+		{
+			EntFire("item_star"+i+"_heal"+postfix.name, "Enable", "", 0, null);
+		}
+
+		text += "治疗";
+		text += "\n等级: "+lvl.tostring();
+		text += "\n效果: "+item.effect;
+		text += "\n范围: "+item.GetRadius(lvl);
+		if(pl.item_buff_radius)
+		{
+			text += " + "+ (item.GetRadius(lvl) * 1.3).tostring();
+		}
+		text += "\n持续时间: "+item.GetDuration(lvl);
+		if(pl.item_buff_turbo)
+		{
+			text += " + 1";
+		}
+		text += " 秒";
+		text += "\nCD: "+item.GetCD(lvl);
+		if(pl.item_buff_recovery)
+		{
+			text += " - 10";
+		}
+
+		text += " 秒";
+
+		item_name = " 治疗 ";
+	}
+	else
+	{
+		havesupport = false;
+		if(name.find("potion") != null)
+		{
+			lvl = 1;
+			local item = GetItemPresetByName("potion");
+			if(lvl == 0)lvl++;
+			text += "药水";
+			text += "\n效果: "+item.effect;
+			text += "\n范围: "+item.GetRadius(lvl);
+			text += "\n持续时间: "+item.GetDuration(lvl);
+
+			text += " 秒";
+
+			item_name = " 药水 ";
+		}
+		else if(name.find("ammo") != null)
+		{
+			lvl = 1;
+			local item = GetItemPresetByName("ammo");
+			if(lvl == 0)lvl++;
+			text += "弹药";
+			text += "\n效果: "+item.effect;
+			text += "\n范围: "+item.GetRadius(lvl);
+			text += "\n持续时间: "+item.GetDuration(lvl);
+			text += " 秒";
+
+			item_name = " 弹药 ";
+		}
+		else if(name.find("phoenix") != null)
+		{
+			lvl = 1;
+			local item = GetItemPresetByName("phoenix");
+			if(lvl == 0)lvl++;
+			text += "菲尼克斯";
+			text += "\n效果: "+item.effect;
+
+			item_name = " 菲尼克斯 ";
+		}
+	}
+
+	if (havesupport)
+	{
+		for(local i = 1; i <= lvl;i++)
+		{
+			EntFire("item_star"+ i + "_" + postfix.name_right + "" + postfix.name, "Enable", "", 0, null);
+			// if (pl.vip)
+			{
+				EntFire("item_star"+ i + "_" + postfix.name_right + "" + postfix.name, "SetGlowEnabled", "", 0, null);
+				EntFire("item_star"+ i + "_" + postfix.name_right + "" + postfix.name, "Alpha", "1", 0, null);
+			}
+		}
+
+		// if (pl.vip)
+		{
+			EntFire("item_star0_" + postfix.name_right + "" + postfix.name, "Alpha", "1", 0, null);
+			EntFire("item_star0_" + postfix.name_right + "" + postfix.name, "SetGlowEnabled", "", 0, null);
+		}
+
+		if (pl.item_buff_radius)
+		{
+			EntFire("item_star0_" + postfix.name_right + "" + postfix.name, "SetGlowColor", "0 255 0", 0, null);
+			EntFire("item_star0_" + postfix.name_right + "" + postfix.name, "color", "0 255 0", 0, null);
+			EntFire("item_star0_" + postfix.name_right + "" + postfix.name, "Enable", "", 0, null);
+		}
+		if (pl.item_buff_turbo)
+		{
+			EntFire("item_star0_" + postfix.name_right + "" + postfix.name, "SetGlowColor", "255 255 0", 0, null);
+			EntFire("item_star0_" + postfix.name_right + "" + postfix.name, "color", "255 255 0", 0, null);
+			EntFire("item_star0_" + postfix.name_right + "" + postfix.name, "Enable", "", 0, null);
+		}
+		if (pl.item_buff_recovery)
+		{
+			EntFire("item_star0_" + postfix.name_right + "" + postfix.name, "SetGlowColor", "140 0 255", 0, null);
+			EntFire("item_star0_" + postfix.name_right + "" + postfix.name, "color", "140 0 255", 0, null);
+			EntFire("item_star0_" + postfix.name_right + "" + postfix.name, "Enable", "", 0, null);
+		}
+		if (pl.item_buff_doble)
+		{
+			EntFire("item_star0_" + postfix.name_right + "" + postfix.name, "SetGlowColor", "0 0 255", 0, null);
+			EntFire("item_star0_" + postfix.name_right + "" + postfix.name, "color", "0 0 255", 0, null);
+			EntFire("item_star0_" + postfix.name_right + "" + postfix.name, "Enable", "", 0, null);
+		}
+		if (pl.item_buff_last)
+		{
+			EntFire("item_star0_" + postfix.name_right + "" + postfix.name, "SetGlowColor", "255 0 0", 0, null);
+			EntFire("item_star0_" + postfix.name_right + "" + postfix.name, "color", "255 0 0", 0, null);
+			EntFire("item_star0_" + postfix.name_right + "" + postfix.name, "Enable", "", 0, null);
+		}
+	}
+	if (ENT_WATCH_ENABLE)
+	{
+		if(lvl == 2)color = ::YELLOW;
+		else if(lvl == 3)color = ::RED;
+		ScriptPrintMessageChatAll("***\x04 "+pl.name+"\x01 {\x07"+pl.steamid+"\x01} 拾取了"+ item_name+""+color+""+lvl+"\x01 等级 ***")
+	}
+
+
+	caller.__KeyValueFromString("message",text);
+	EntFireByHandle(caller, "Display", "", 0, activator, activator);
+}
+
+function DropItem()
+{
+	local item_owner = GetItemByButton(caller);
+	if(item_owner == null)
+		return;
+
+	local lvl = item_owner.lvl;
+	if (item_owner.RemoveOwner())
+	{
+		if(ENT_WATCH_ENABLE)
+		{
+			local pl = GetPlayerClassByHandle(activator);
+			if(pl != null)
+			{
+				local item_name = "";
+				if(item_owner.name_right == "bio")
+					item_name = "\x0A 浮毒\x01 ";
+				if(item_owner.name_right == "ice")
+					item_name = "\x0B 冰\x01 ";
+				if(item_owner.name_right == "poison")
+					item_name = "\x06 剧毒\x01 ";
+				if(item_owner.name_right == "summon")
+					item_name = "\x09 召唤\x01 ";
+				if(item_owner.name_right == "fire")
+					item_name = "\x02 火\x01 ";
+				if(item_owner.name_right == "wind")
+					item_name = "\x05 风\x01 ";
+				if(item_owner.name_right == "electro")
+					item_name = "\x0C 电 \x01 ";
+				if(item_owner.name_right == "earth")
+					item_name = "\x10 土\x01 ";
+				if(item_owner.name_right == "gravity")
+					item_name = "\x0E 黑洞\x01 ";
+				if(item_owner.name_right == "ultimate")
+					item_name = "\x04 终极\x01 ";
+				if(item_owner.name_right == "heal")
+					item_name = " 治疗 ";
+				if(item_owner.name_right == "potion")
+					item_name = " 药水 ";
+				if(item_owner.name_right == "ammo")
+					item_name = " 弹药 ";
+				if(item_owner.name_right == "phoenix")
+					item_name = " 菲尼克斯 ";
+				ScriptPrintMessageChatAll("***\x04 "+pl.name+"\x01 {\x07"+pl.steamid+"\x01} 丢弃了"+item_name+" "+((lvl==3) ? RED : (lvl==2) ? YELLOW : GREEN)+""+((lvl != null) ? lvl : 0)+"\x01 等级 ***")
+			}
+		}
+	}
+}
+
+//entwatch
+NAME_TRANSLATE<-{
+	ammo="弹药",
+	bio="浮毒",
+	electro="电",
+	fire="火",
+	gravity="黑洞",
+	heal="治疗",
+	ice="冰",
+	phoenix="不死鸟之尾",
+	poison="剧毒",
+	potion="药水",
+	summon="召唤",
+	ultimate="终极",
+	wind="风",
+	earth="土",
+	mike="赤红XIII",
+	Yuffie="尤菲-如月",
+}
+NAME_TRANSLATE["Red XIII"]<-"赤红13";
+function ShowItems()
+{
+	if (ENT_WATCH_ENABLE)
+	{
+		local text = "";
+		local item_name_array = [];
+		local item_data_array = [];
+		for (local i = 0; i < ITEM_OWNER.len(); i++)
+		{
+			if(!ITEM_OWNER[i].button.IsValid())
+			{
+				ITEM_OWNER.remove(i);
+				return ShowItems();
+			}
+
+			if(ITEM_OWNER[i].owner != null)
+			{
+				local item_name = ITEM_OWNER[i].name_right;
+				// local first = item_name.slice(0,1);
+				// local second = item_name.slice(1,item_name.len());
+				// local new_new_item_name = first.toupper() + second;
+				local new_new_item_name;
+				if(item_name in NAME_TRANSLATE){
+					new_new_item_name=NAME_TRANSLATE[item_name];
+				}else{
+					local first = item_name.slice(0,1);
+					local second = item_name.slice(1,item_name.len());
+					new_new_item_name = first.toupper() + second;
+				}
+				item_name_array.push(new_new_item_name);
+				item_data_array.push(ITEM_OWNER[i]);
+			}
+		}
+
+		for (local i = 0; i < item_name_array.len(); i++)
+		{
+			//fix name
+			{
+				local id = 1;
+				for (local a = 0; a < item_name_array.len(); a++)
+				{
+					if(item_name_array[i] == item_name_array[a])
+					{
+						if(item_data_array[i] != item_data_array[a])
+						{
+							item_name_array[a] += (id++).tostring();
+						}
+					}
+				}
+			}
+
+			local pl = GetPlayerClassByHandle(item_data_array[i].owner);
+			text += "\n" + item_name_array[i] + ((item_data_array[i].lvl != null) ? "[" + ((pl.item_buff_doble) ? "-" : "") + item_data_array[i].lvl + "]" : "");
+
+			if(pl.item_buff_last)
+			{
+				local handle = pl.handle;
+				local hp = handle.GetHealth()
+				local hpmax = handle.GetMaxHealth();
+				local sethp = hp + 1;
+				if(sethp > hpmax)
+					sethp = hpmax;
+				handle.SetHealth(sethp);
+			}
+
+			if(item_data_array[i].canUse)
+			{
+				if(!item_data_array[i].button.GetScriptScope().GetStatus())
+				{
+					text += "[L]";
+				}
+				else
+				{
+					if(item_data_array[i].type == 1)
+					{
+						text += "[R]";
+					}
+					else if(item_data_array[i].type == 2)
+					{
+						text += "(" + item_data_array[i].count + ")";
+					}
+					else if(item_data_array[i].type == 3)
+					{
+						text += "(" + item_data_array[i].count + "/" + item_data_array[i].maxcount + ")";
+					}
+				}
+			}
+			else text += "["+item_data_array[i].cd+"]";
+			text += pl.name;
+		}
+
+		if(text != "")
+		{
+			ItemText.__KeyValueFromString("message",text);
+			foreach(pl in PLAYERS)
+			{
+				if(pl.block_entwatch)
+					continue;
+
+				if(pl.handle != null && pl.handle.IsValid() && pl.handle.GetTeam() != ((ENT_WATCH_TEAM) ? 2 : 0))
+					EntFireByHandle(ItemText, "Display", "", 0.01, pl.handle, pl.handle);
+			}
+		}
+	}
+	else
+	{
+		for (local i = 0; i < ITEM_OWNER.len(); i++)
+		{
+			if(!ITEM_OWNER[i].button.IsValid())
+			{
+				ITEM_OWNER.remove(i);
+				return ShowItems();
+			}
+
+			if(ITEM_OWNER[i].owner != null)
+			{
+				local pl = GetPlayerClassByHandle(ITEM_OWNER[i].owner);
+				if(pl.item_buff_last)
+				{
+					local handle = pl.handle;
+					local hp = handle.GetHealth()
+					local hpmax = handle.GetMaxHealth();
+					local sethp = hp + 1;
+					if(sethp > hpmax)
+						sethp = hpmax;
+					handle.SetHealth(sethp);
+				}
+			}
+		}
+	}
+	EntFireByHandle(self, "RunScriptCode", "ShowItems();", 0.5, null, null);
+}
+
+
+function UseUltimate()
+{
+	local pl = GetPlayerClassByHandle(activator);
+	local item_owner = GetItemByButton(caller);
+	local item_preset = GetItemPresetByName(item_owner.name_right);
+	local postfix = item_owner.name;
+	local lvl = pl.ultimate_lvl;
+	if(pl.item_buff_doble)
+		lvl--;
+	if(lvl <= 0)
+		lvl = 1;
+	if (CLASSIC_MOD)
+	{
+		lvl = 3;
+	}
+	local worktime = item_preset.GetDuration(lvl);
+	local radius = item_preset.GetRadius(lvl);
+	local damage = item_preset.GetDamage((!pl.item_buff_radius) ? lvl : (lvl <= 1) ? 1 : lvl - 1);
+	local timehp = item_preset.GetTime((!pl.item_buff_radius) ? lvl : (lvl <= 1) ? 1 : lvl - 1);
+	local cd = item_preset.GetCD(lvl);
+
+	if(pl.item_buff_radius)
+	{
+		radius *= 1.3;
+	}
+
+	local result = item_owner.Use();
+
+	if(result == -1)
+		return;
+	if (ENT_WATCH_ENABLE)
+	{
+		ScriptPrintMessageChatAll("***\x04 "+pl.name+"\x01 {\x07"+pl.steamid+"\x01} 使用了\x04 终极\x01 "+((lvl==3) ? RED : (lvl==2) ? YELLOW : GREEN)+""+((lvl != null) ? lvl : 0)+"\x01 等级 ***");
+	}
+	if(!item_owner.canUse)
+	{
+		EntFire("item_effect_"+item_preset.name+""+postfix, "Stop", "", 0, null);
+
+		EntFire("item_ultima_ligh*", "turnoff", "", 0, null);
+		EntFire("item_ultima_sprite*", "togglesprite", "", 0, null);
+
+		EntFire("item_button_"+item_preset.name+""+postfix, "Lock", "", 0, null);
+	}
+
+	if(pl.item_buff_turbo)
+	{
+		worktime -= 1.5;
+	}
+	if(pl.item_buff_recovery)
+	{
+		worktime += 1;
+	}
+
+	if(result == 1)
+	{
+		if(!item_owner.canUse)
+		{
+			if(pl.item_buff_turbo)
+			{
+				cd += 15;
+			}
+			if(pl.item_buff_recovery)
+			{
+				cd -= 15;
+			}
+			EntFire("item_effect_"+item_preset.name+""+postfix, "Start", "", cd, null);
+			EntFire("item_button_"+item_preset.name+""+postfix, "UnLock", "", cd, null);
+			EntFire("item_ultima_ligh*", "turnon", "", cd, null);
+			EntFire("item_ultima_sprite*", "showsprite", "", cd, null);
+
+			StartCD(cd);
+		}
+	}
+	else if(result == 2)
+	{
+		EntFireByHandle(caller, "RunScriptCode", "useloc = false;", 0.00, null, null);
+		EntFireByHandle(caller, "RunScriptCode", "useloc = true;", worktime + 6.00, null, null);
+		StartCD(worktime + 6.00);
+	}
+	else if(result == 3)
+	{
+		local countercd = 100;
+		cd = 160;
+
+		if(pl.item_buff_turbo)
+		{
+			countercd += 15
+			cd += 20;
+		}
+		if(pl.item_buff_recovery)
+		{
+			countercd -= 15
+			cd -= 20;
+		}
+
+		if(!item_owner.canUse)
+		{
+			EntFire("item_effect_"+item_preset.name+""+postfix, "Start", "", cd, null);
+			EntFire("item_button_"+item_preset.name+""+postfix, "UnLock", "", cd, null);
+			EntFire("item_ultima_ligh*", "turnon", "", cd, null);
+			EntFire("item_ultima_sprite*", "showsprite", "", cd, null);
+			StartCD(cd);
+		}
+		else
+		{
+			EntFireByHandle(caller, "RunScriptCode", "useloc = false;", 0.00, null, null);
+			EntFireByHandle(caller, "RunScriptCode", "useloc = true;", worktime + 6.00, null, null);
+			StartCD(worktime + 6.00);
+		}
+
+		StartCounter(countercd);
+	}
+
+	EntFire("item_sound_use", "PlaySound", "", 0, null);
+
+	EntFire("item_sound_ultimate"+postfix, "PlaySound", "", 0, null);
+	// if(pl.item_buff_doble)
+	//     EntFire("item_effect_trigger_ultimate"+lvl+""+postfix, "DestroyImmediately", "", 0, null);
+	// else
+	EntFire("item_effect_trigger_ultimate"+lvl+""+postfix, "Start", "", 0.1, null);
+	EntFire("item_effect_trigger_ultimate"+lvl+""+postfix, "Stop", "", worktime, null);
+	EntFire("Ultima_fade" "Fade", "", worktime, null);
+
+
+	if(Active_Boss != null)
+	{
+		EntFire("item_beam_"+item_preset.name+""+postfix, "TurnOn", "", 0.00, null);
+		EntFire("item_beam_"+item_preset.name+""+postfix, "TurnOff", "", 2.00, null);
+	}
+
+	EntFireByHandle(self, "RunScriptCode", "UltimateHurt("+damage.tostring()+","+radius.tostring()+","+timehp.tostring()+","+((!pl.item_buff_radius) ? lvl : (lvl <= 1) ? 1 : lvl - 1).tostring()+")", worktime, caller, caller);
+}
+
+function UltimateHurt(damage,radius,timehp,lvl)
+{
+	Boss_Damage_Item("ultimate", lvl);
+
+	local h = null;
+	local AllZms = CountAlive(2) - 1;
+	local UltimaZms = [];
+
+	while(null != (h = Entities.FindByClassnameWithin(h, "player", caller.GetOrigin(), radius)))
+	{
+		if(h != null && h.IsValid() && h.GetHealth() > 0 && h.GetTeam() == 2)
+		{
+			UltimaZms.push(h);
+		}
+	}
+	if (UltimaZms.len() < 1)
+	{
+		return;
+	}
+
+	local ignore = (AllZms <= UltimaZms.len());
+
+	ignore = false;
+
+	local zombie_HP;
+	local proccent_damage;
+	foreach (zombie in UltimaZms)
+	{
+		if (ignore)
+		{
+			ignore = false;
+			zombie.SetOrigin(Vector(4480, -9984, -400));
+			continue;
+		}
+
+		if (lvl >= 3)
+		{
+			EntFireByHandle(zombie, "SetHealth", "0", 0, null, null);
+			EntFireByHandle(zombie, "SetDamageFilter", "", 0.00, null, null);
+			continue;
+		}
+
+		zombie_HP = zombie.GetMaxHealth();
+		if (zombie_HP < zombie.GetHealth())
+		{
+			zombie_HP = zombie.GetHealth();
+		}
+
+		proccent_damage = zombie_HP * damage * 0.01;
+		zombie_HP = zombie.GetHealth() - (proccent_damage + timehp);
+
+		if (zombie_HP > 0)
+		{
+			zombie.SetHealth(zombie_HP);									   
+			continue;																  
+		}
+
+		EntFireByHandle(zombie, "SetHealth", "0", 0, null, null);
+		EntFireByHandle(zombie, "SetDamageFilter", "", 0.00, null, null);																   
+	}
+}
+
+function CountAlive(TEAM = 3)
+{
+	local handle = null;
+	local counter = 0;
+	while(null != (handle = Entities.FindByClassname(handle,"player")))
+	{
+		if(handle.GetTeam() == TEAM && handle.GetHealth() > 0)
+			counter++;
+	}
+	return counter;
+}
+
+function UseWind()
+{
+	local item_owner = GetItemByButton(caller);
+	local postfix = item_owner.name;
+
+	local trigger = Entities.FindByName(null, "item_trigger_wind"+postfix);
+
+	local text;
+
+	if(trigger.GetScriptScope().ticking)
+		return;
+
+	local pl = GetPlayerClassByHandle(activator);
+	local item_preset = GetItemPresetByName(item_owner.name_right);
+	local lvl = pl.wind_lvl;
+	if(pl.item_buff_doble)
+		lvl--;
+	if(lvl <= 0)
+		lvl = 1;
+	if (CLASSIC_MOD)
+	{
+		lvl = 3;
+	}
+	local radius = item_preset.GetRadius(lvl);
+	local worktime = item_preset.GetDuration(lvl);
+	local cd = item_preset.GetCD(lvl);
+
+	if(pl.item_buff_radius)
+	{
+		radius *= 1.3;
+	}
+
+	local result = item_owner.Use();
+
+	if(result == -1)
+		return;
+	if (ENT_WATCH_ENABLE)
+	{
+		ScriptPrintMessageChatAll("***\x04 "+pl.name+"\x01 {\x07"+pl.steamid+"\x01} 使用了\x05 风\x01 "+((lvl==3) ? RED : (lvl==2) ? YELLOW : GREEN)+""+((lvl != null) ? lvl : 0)+"\x01 等级 ***");
+	}
+
+	if(!item_owner.canUse)
+	{
+		EntFire("item_effect_"+item_preset.name+""+postfix, "Stop", "", 0, null);
+		EntFire("item_button_"+item_preset.name+""+postfix, "Lock", "", 0, null);
+		EntFire("item_"+item_preset.name+"_sprite"+postfix, "hidesprite", "", 0, null);
+		EntFire("item_"+item_preset.name+"_light"+postfix, "turnoff", "", 0, null);
+	}
+
+	if(pl.item_buff_turbo)
+	{
+		worktime += 1.5;
+	}
+	if(pl.item_buff_recovery)
+	{
+		worktime -= 1;
+	}
+
+	if(result == 1)
+	{
+		if(!item_owner.canUse)
+		{
+			if(pl.item_buff_turbo)
+			{
+				cd += 15;
+			}
+			if(pl.item_buff_recovery)
+			{
+				cd -= 15;
+			}
+
+			EntFire("item_effect_"+item_preset.name+""+postfix, "Start", "", cd, null);
+			EntFire("item_button_"+item_preset.name+""+postfix, "UnLock", "", cd, null);
+			EntFire("item_"+item_preset.name+"_sprite"+postfix, "ShowSprite", "", cd, null);
+			EntFire("item_"+item_preset.name+"_light"+postfix, "TurnOn", "", cd, null);
+
+			StartCD(cd);
+		}
+	}
+	else if(result == 2)
+	{
+		EntFireByHandle(caller, "RunScriptCode", "useloc = false;", 0.00, null, null);
+		EntFireByHandle(caller, "RunScriptCode", "useloc = true;", worktime + 6.00, null, null);
+		StartCD(worktime + 6.00);
+	}
+	else if(result == 3)
+	{
+		local countercd = 100;
+		cd = 160;
+
+		if(pl.item_buff_turbo)
+		{
+			countercd += 15
+			cd += 20;
+		}
+		if(pl.item_buff_recovery)
+		{
+			countercd -= 15
+			cd -= 20;
+		}
+
+		if(!item_owner.canUse)
+		{
+			EntFire("item_effect_"+item_preset.name+""+postfix, "Start", "", cd, null);
+			EntFire("item_button_"+item_preset.name+""+postfix, "UnLock", "", cd, null);
+			EntFire("item_"+item_preset.name+"_sprite"+postfix, "ShowSprite", "", cd, null);
+			EntFire("item_"+item_preset.name+"_light"+postfix, "TurnOn", "", cd, null);
+
+			StartCD(cd);
+		}
+		else
+		{
+			EntFireByHandle(caller, "RunScriptCode", "useloc = false;", 0.00, null, null);
+			EntFireByHandle(caller, "RunScriptCode", "useloc = true;", worktime + 6.00, null, null);
+			StartCD(worktime + 6.00);
+		}
+
+		StartCounter(countercd);
+	}
+
+	EntFire("item_sound_use", "PlaySound", "", 0, null);
+
+	trigger.GetScriptScope().dist = radius;
+	trigger.GetScriptScope().power = item_preset.GetDamage((!pl.item_buff_radius) ? lvl : (lvl <= 1) ? 1 : lvl - 1);
+
+	EntFire("item_sound_wind"+postfix, "PlaySound", "", 0, null);
+
+	EntFire("item_effect_trigger_wind"+lvl+""+postfix, "Start", "", 0, null);
+	EntFire("item_trigger_wind"+postfix, "RunScriptCode", "Enable()", 0.01, null);
+
+	EntFire("item_trigger_wind"+postfix, "RunScriptCode", "Disable()", worktime, null);
+	// if(pl.item_buff_doble)
+	//     EntFire("item_effect_trigger_wind"+lvl+""+postfix, "DestroyImmediately", "", worktime, null);
+	// else
+	EntFire("item_effect_trigger_wind"+lvl+""+postfix, "Stop", "", worktime, null);
+
+	if(Active_Boss != null && Active_Boss != "Cactus")
+	{
+		EntFire("item_beam_"+item_preset.name+""+postfix, "TurnOn", "", 0.00, null);
+		EntFire("item_beam_"+item_preset.name+""+postfix, "TurnOff", "", 2.00, null);
+	}
+
+	Boss_Damage_Item(item_owner.name_right, (!pl.item_buff_radius) ? lvl : (lvl <= 1) ? 1 : lvl - 1);
+}
+
+function UseIce()
+{
+	local item_owner = GetItemByButton(caller);
+	local postfix = item_owner.name;
+
+	local item_preset = GetItemPresetByName(item_owner.name_right);
+	local pl = GetPlayerClassByHandle(activator);
+
+	local lvl = pl.ice_lvl;
+	if(pl.item_buff_doble)
+	  lvl--;
+	if(lvl <= 0)
+	  lvl = 1;
+	if (CLASSIC_MOD)
+	{
+		lvl = 3;
+	}
+	local Worktime = item_preset.GetDuration(lvl);
+	local radius = item_preset.GetRadius(lvl);
+	local time = item_preset.GetTime((!pl.item_buff_radius) ? lvl : (lvl <= 1) ? 1 : lvl - 1);
+	local cd = item_preset.GetCD(lvl);
+
+	if(pl.item_buff_radius)
+	{
+		radius *= 1.3;
+	}
+
+	local result = item_owner.Use();
+
+	if(result == -1)
+		return;
+	if (ENT_WATCH_ENABLE)
+	{
+		ScriptPrintMessageChatAll("***\x04 "+pl.name+"\x01 {\x07"+pl.steamid+"\x01} 使用了\x0B 冰\x01 "+((lvl==3) ? RED : (lvl==2) ? YELLOW : GREEN)+""+((lvl != null) ? lvl : 0)+"\x01 等级 ***");
+	}
+	if(!item_owner.canUse)
+	{
+		EntFire("item_effect_"+item_preset.name+""+postfix, "Stop", "", 0, null);
+		EntFire("item_button_"+item_preset.name+""+postfix, "Lock", "", 0, null);
+		EntFire("item_"+item_preset.name+"_sprite"+postfix, "hidesprite", "", 0, null);
+		EntFire("item_"+item_preset.name+"_light"+postfix, "turnoff", "", 0, null);
+	}
+
+	if(pl.item_buff_turbo)
+	{
+		Worktime += 2;
+		time += 0.25;
+	}
+	if(pl.item_buff_recovery)
+	{
+		Worktime -= 2;
+		time -= 0.25;
+	}
+
+	if(result == 1)
+	{
+		if(!item_owner.canUse)
+		{
+
+			if(pl.item_buff_turbo)
+			{
+				cd += 15;
+			}
+			if(pl.item_buff_recovery)
+			{
+				cd -= 15;
+			}
+			EntFire("item_effect_"+item_preset.name+""+postfix, "Start", "", cd, null);
+			EntFire("item_button_"+item_preset.name+""+postfix, "UnLock", "", cd, null);
+			EntFire("item_"+item_preset.name+"_sprite"+postfix, "ShowSprite", "", cd, null);
+			EntFire("item_"+item_preset.name+"_light"+postfix, "TurnOn", "", cd, null);
+
+			StartCD(cd);
+		}
+	}
+	else if(result == 3)
+	{
+		local countercd = 100;
+		cd = 160;
+
+		if(pl.item_buff_turbo)
+		{
+			countercd += 15
+			cd += 20;
+		}
+		if(pl.item_buff_recovery)
+		{
+			countercd -= 15
+			cd -= 20;
+		}
+
+		if(!item_owner.canUse)
+		{
+			EntFire("item_effect_"+item_preset.name+""+postfix, "Start", "", cd, null);
+			EntFire("item_button_"+item_preset.name+""+postfix, "UnLock", "", cd, null);
+			EntFire("item_"+item_preset.name+"_sprite"+postfix, "ShowSprite", "", cd, null);
+			EntFire("item_"+item_preset.name+"_light"+postfix, "TurnOn", "", cd, null);
+			StartCD(cd);
+		}
+
+		StartCounter(countercd);
+	}
+
+	EntFire("item_sound_use", "PlaySound", "", 0, null);
+
+	Entities.FindByName(null, "item_spawner_ice"+postfix).SpawnEntity();
+
+	local trigger = Entities.FindByName(null, "item_temp_ice_trigger");
+
+	trigger.GetScriptScope().slow = time;
+	trigger.GetScriptScope().dist = radius;
+	trigger.GetScriptScope().power = item_preset.GetDamage((!pl.item_buff_radius) ? lvl : (lvl <= 1) ? 1 : lvl - 1);
+
+	local name = Time().tointeger()
+
+	for(local i = 1; i <= 3; i++)
+	{
+		if(lvl != i)
+		{
+			EntFire("item_temp_ice_effect"+i, "Kill", "", 0.00, null);
+			EntFire("item_temp_ice_model"+i, "Kill", "", 0.00, null);
+		}
+	}
+
+	EntFire("item_temp_ice_effect"+lvl, "Start", "", 0, null);
+	EntFire("item_temp_ice_model"+lvl, "RunScriptCode", "Spawn(0.5)", 0, null);
+
+	EntFire("item_temp_ice_trigger", "AddOutPut", "targetname item_temp_ice_trigger"+name, 0, null);
+	EntFire("item_temp_ice_effect"+lvl, "AddOutPut", "targetname item_temp_ice_effect"+lvl+""+name, 0, null);
+	EntFire("item_temp_ice_model"+lvl, "AddOutPut", "targetname item_temp_ice_model"+lvl+""+name, 0, null);
+
+	EntFire("item_temp_ice_trigger"+name, "Kill", "", Worktime, null);
+	EntFire("item_temp_ice_effect"+lvl+""+name, "Kill", "", Worktime, null);
+	EntFire("item_temp_ice_model"+lvl+""+name, "RunScriptCode", "Kill(" + (Worktime * 0.9) + ")", Worktime * 0.2, null);
+
+	if(Active_Boss != null)
+	{
+		EntFire("item_beam_"+item_preset.name+""+postfix, "TurnOn", "", 0.00, null);
+		EntFire("item_beam_"+item_preset.name+""+postfix, "TurnOff", "", 2.00, null);
+	}
+
+	Boss_Damage_Item(item_owner.name_right, (!pl.item_buff_radius) ? lvl : (lvl <= 1) ? 1 : lvl - 1);
+}
+
+function UseElectro()
+{
+	local item_owner = GetItemByButton(caller);
+	local postfix = item_owner.name;
+
+	local item_preset = GetItemPresetByName(item_owner.name_right);
+	local pl = GetPlayerClassByHandle(activator);
+
+	local lvl = pl.electro_lvl;
+	if(pl.item_buff_doble)
+		lvl--;
+	if(lvl <= 0)
+		lvl = 1;
+	if (CLASSIC_MOD)
+	{
+		lvl = 3;
+	}
+	local worktime = item_preset.GetDuration(lvl);
+	local radius = item_preset.GetRadius(lvl);
+	local cd = item_preset.GetCD(lvl);
+
+	if(pl.item_buff_radius)
+	{
+		radius *= 1.3;
+	}
+	local result = item_owner.Use();
+
+	if(result == -1)
+		return;
+	if (ENT_WATCH_ENABLE)
+	{
+		ScriptPrintMessageChatAll("***\x04 "+pl.name+"\x01 {\x07"+pl.steamid+"\x01} 使用了\x0C 电\x01 "+((lvl==3) ? RED : (lvl==2) ? YELLOW : GREEN)+""+((lvl != null) ? lvl : 0)+"\x01 等级 ***");
+	}
+
+	if(!item_owner.canUse)
+	{
+		EntFire("item_effect_"+item_preset.name+""+postfix, "Stop", "", 0, null);
+		EntFire("item_button_"+item_preset.name+""+postfix, "Lock", "", 0, null);
+		EntFire("item_"+item_preset.name+"_sprite"+postfix, "hidesprite", "", 0, null);
+		EntFire("item_"+item_preset.name+"_light"+postfix, "turnoff", "", 0, null);
+	}
+
+	if(pl.item_buff_turbo)
+	{
+		worktime += 1.5;
+	}
+	if(pl.item_buff_recovery)
+	{
+		worktime -= 1;
+	}
+
+	if(result == 1)
+	{
+		if(!item_owner.canUse)
+		{
+			if(pl.item_buff_turbo)
+			{
+				cd += 5;
+			}
+			if(pl.item_buff_recovery)
+			{
+				cd -= 5;
+			}
+			EntFire("item_effect_"+item_preset.name+""+postfix, "Start", "", cd, null);
+			EntFire("item_button_"+item_preset.name+""+postfix, "UnLock", "", cd, null);
+			EntFire("item_"+item_preset.name+"_sprite"+postfix, "ShowSprite", "", cd, null);
+			EntFire("item_"+item_preset.name+"_light"+postfix, "TurnOn", "", cd, null);
+
+			StartCD(cd);
+		}
+	}
+	else if(result == 3)
+	{
+		local countercd = 20 * item_owner.maxcount;
+		cd = 32 * item_owner.maxcount;
+
+		if(pl.item_buff_turbo)
+		{
+			countercd += 5
+			cd += 10;
+		}
+		if(pl.item_buff_recovery)
+		{
+			countercd -= 5
+			cd -= 10;
+		}
+
+		if(!item_owner.canUse)
+		{
+			EntFire("item_effect_"+item_preset.name+""+postfix, "Start", "", cd, null);
+			EntFire("item_button_"+item_preset.name+""+postfix, "UnLock", "", cd, null);
+			EntFire("item_"+item_preset.name+"_sprite"+postfix, "ShowSprite", "", cd, null);
+			EntFire("item_"+item_preset.name+"_light"+postfix, "TurnOn", "", cd, null);
+			StartCD(cd);
+		}
+
+		StartCounter(countercd);
+	}
+
+	EntFire("item_sound_use", "PlaySound", "", 0, null);
+
+	Entities.FindByName(null, "item_spawner_electro"+postfix).SpawnEntity();
+	local trigger = Entities.FindByName(null, "item_temp_electro_trigger");
+
+	trigger.GetScriptScope().dist = radius;
+	trigger.GetScriptScope().damage = item_preset.GetDamage((!pl.item_buff_radius) ? lvl : (lvl <= 1) ? 1 : lvl - 1) * 0.05;
+	trigger.GetScriptScope().slow = item_preset.GetTime((!pl.item_buff_radius) ? lvl : (lvl <= 1) ? 1 : lvl - 1);
+
+	local name = Time().tointeger()
+
+	for(local i = 1; i <= 3; i++)
+	{
+		if(lvl != i)
+			EntFire("item_temp_electro_effect"+i, "Kill", "", 0.00, null);
+	}
+
+	EntFire("item_temp_electro_effect"+lvl, "Start", "", 0, null);
+
+	EntFire("item_temp_electro_trigger", "AddOutPut", "targetname item_temp_electro_trigger"+name, 0, null);
+	EntFire("item_temp_electro_effect"+lvl, "AddOutPut", "targetname item_temp_electro_effect"+lvl+""+name, 0, null);
+
+	EntFire("item_temp_electro_trigger"+name, "Kill", "", worktime, null);
+	EntFire("item_temp_electro_effect"+lvl+""+name, "Kill", "", worktime, null);
+
+	if(Active_Boss != null)
+	{
+		EntFire("item_beam_"+item_preset.name+""+postfix, "TurnOn", "", 0.00, null);
+		EntFire("item_beam_"+item_preset.name+""+postfix, "TurnOff", "", 2.00, null);
+	}
+
+	Boss_Damage_Item(item_owner.name_right, (!pl.item_buff_radius) ? lvl : (lvl <= 1) ? 1 : lvl - 1);
+}
+
+function UseSummon()
+{
+	local item_owner = GetItemByButton(caller);
+	local postfix = item_owner.name;
+
+	local item_preset = GetItemPresetByName(item_owner.name_right);
+	local pl = GetPlayerClassByHandle(activator);
+
+	local lvl = pl.summon_lvl;
+	if(pl.item_buff_doble)
+		lvl--;
+	if(lvl <= 0)
+		lvl = 1;
+	if (CLASSIC_MOD)
+	{
+		lvl = 3;
+	}
+	local Worktime = item_preset.GetDuration(lvl);
+	local radius = item_preset.GetRadius(lvl);
+	local cd = item_preset.GetCD(lvl);
+
+	if(pl.item_buff_radius)
+	{
+		radius *= 1.3;
+	}
+
+	local result = item_owner.Use();
+
+	if(result == -1)
+		return;
+	if (ENT_WATCH_ENABLE)
+	{
+		ScriptPrintMessageChatAll("***\x04 "+pl.name+"\x01 {\x07"+pl.steamid+"\x01} 使用了\x09 召唤\x01 "+((lvl==3) ? RED : (lvl==2) ? YELLOW : GREEN)+""+((lvl != null) ? lvl : 0)+"\x01 等级 ***");
+	}
+	if(!item_owner.canUse)
+	{
+		EntFire("item_effect_"+item_preset.name+""+postfix, "Stop", "", 0, null);
+		EntFire("item_button_"+item_preset.name+""+postfix, "Lock", "", 0, null);
+		EntFire("item_"+item_preset.name+"_sprite"+postfix, "hidesprite", "", 0, null);
+		EntFire("item_"+item_preset.name+"_light"+postfix, "turnoff", "", 0, null);
+	}
+
+	if(pl.item_buff_turbo)
+	{
+		Worktime += 1.5;
+	}
+	if(pl.item_buff_recovery)
+	{
+		Worktime -= 1;
+	}
+
+	if(result == 1)
+	{
+		if(!item_owner.canUse)
+		{
+			if(pl.item_buff_turbo)
+			{
+				cd += 15;
+			}
+			if(pl.item_buff_recovery)
+			{
+				cd -= 15;
+			}
+			EntFire("item_effect_"+item_preset.name+""+postfix, "Start", "", cd, null);
+			EntFire("item_button_"+item_preset.name+""+postfix, "UnLock", "", cd, null);
+			EntFire("item_"+item_preset.name+"_sprite"+postfix, "ShowSprite", "", cd, null);
+			EntFire("item_"+item_preset.name+"_light"+postfix, "TurnOn", "", cd, null);
+
+			StartCD(cd);
+		}
+	}
+	else if(result == 3)
+	{
+		local countercd = 100;
+		cd = 160;
+
+		if(pl.item_buff_turbo)
+		{
+			countercd += 15
+			cd += 20;
+		}
+		if(pl.item_buff_recovery)
+		{
+			countercd -= 15
+			cd -= 20;
+		}
+
+		if(!item_owner.canUse)
+		{
+			EntFire("item_effect_"+item_preset.name+""+postfix, "Start", "", cd, null);
+			EntFire("item_button_"+item_preset.name+""+postfix, "UnLock", "", cd, null);
+			EntFire("item_"+item_preset.name+"_sprite"+postfix, "ShowSprite", "", cd, null);
+			EntFire("item_"+item_preset.name+"_light"+postfix, "TurnOn", "", cd, null);
+			StartCD(cd);
+		}
+
+		StartCounter(countercd);
+	}
+
+	EntFire("item_sound_use", "PlaySound", "", 0, null);
+
+	Entities.FindByName(null, "item_spawner_summon"+postfix).SpawnEntity();
+
+	local trigger = Entities.FindByName(null, "item_temp_summon_trigger");
+
+	trigger.GetScriptScope().dist = radius;
+	trigger.GetScriptScope().power = item_preset.GetDamage((!pl.item_buff_radius) ? lvl : (lvl <= 1) ? 1 : lvl - 1);
+	trigger.GetScriptScope().worktime = item_preset.GetTime(lvl);
+	trigger.GetScriptScope().Level = lvl;
+
+	local name = Time().tointeger()
+	EntFire("item_temp_summon_effect3", "AddOutPut", "targetname item_temp_summon_effect3"+name, 0.01, null);
+	EntFire("item_temp_summon_effect2", "AddOutPut", "targetname item_temp_summon_effect2"+name, 0.01, null);
+	EntFire("item_temp_summon_effect1", "AddOutPut", "targetname item_temp_summon_effect1"+name, 0.01, null);
+	EntFire("item_temp_summon_trigger", "AddOutPut", "targetname item_temp_summon_trigger"+name, 0.01, null);
+	EntFire("item_temp_summon_effect", "AddOutPut", "targetname item_temp_summon_effect"+name, 0.01, null);
+
+	EntFire("item_temp_summon_trigger"+name, "RunScriptCode", "SelfDestroy();", Worktime, null);
+	Boss_Damage_Item(item_owner.name_right, (!pl.item_buff_radius) ? lvl : (lvl <= 1) ? 1 : lvl - 1);
+}
+
+function UseBio()
+{
+	local item_owner = GetItemByButton(caller);
+	local postfix = item_owner.name;
+
+	local item_preset = GetItemPresetByName(item_owner.name_right);
+	local pl = GetPlayerClassByHandle(activator);
+
+	local lvl = pl.bio_lvl;
+	if(pl.item_buff_doble)
+		lvl--;
+	if(lvl <= 0)
+		lvl = 1;
+	if (CLASSIC_MOD)
+	{
+		lvl = 3;
+	}
+	local worktime = item_preset.GetDuration(lvl);
+	local radius = item_preset.GetRadius(lvl);
+	local cd = item_preset.GetCD(lvl);
+
+	if(pl.item_buff_radius)
+	{
+		radius *= 1.3;
+	}
+
+	local result = item_owner.Use();
+
+	if(result == -1)
+		return;
+	if (ENT_WATCH_ENABLE)
+	{
+		ScriptPrintMessageChatAll("***\x04 "+pl.name+"\x01 {\x07"+pl.steamid+"\x01} 使用了\x0A 浮毒\x01 "+((lvl==3) ? RED : (lvl==2) ? YELLOW : GREEN)+""+((lvl != null) ? lvl : 0)+"\x01 等级 ***");
+	}
+	if(!item_owner.canUse)
+	{
+		EntFire("item_effect_"+item_preset.name+""+postfix, "Stop", "", 0, null);
+		EntFire("item_button_"+item_preset.name+""+postfix, "Lock", "", 0, null);
+		EntFire("item_"+item_preset.name+"_sprite"+postfix, "hidesprite", "", 0, null);
+		EntFire("item_"+item_preset.name+"_light"+postfix, "turnoff", "", 0, null);
+	}
+
+	if(pl.item_buff_turbo)
+	{
+		worktime += 1.5;
+	}
+	if(pl.item_buff_recovery)
+	{
+		worktime -= 1;
+	}
+
+	if(result == 1)
+	{
+		if(!item_owner.canUse)
+		{
+			if(pl.item_buff_turbo)
+			{
+				cd += 15;
+			}
+			if(pl.item_buff_recovery)
+			{
+				cd -= 15;
+			}
+
+			EntFire("item_effect_"+item_preset.name+""+postfix, "Start", "", cd, null);
+			EntFire("item_button_"+item_preset.name+""+postfix, "UnLock", "", cd, null);
+			EntFire("item_"+item_preset.name+"_sprite"+postfix, "ShowSprite", "", cd, null);
+			EntFire("item_"+item_preset.name+"_light"+postfix, "TurnOn", "", cd, null);
+
+			StartCD(cd);
+		}
+	}
+	else if(result == 3)
+	{
+		local countercd = 100;
+		cd = 160;
+
+		if(pl.item_buff_turbo)
+		{
+			countercd += 15
+			cd += 20;
+		}
+		if(pl.item_buff_recovery)
+		{
+			countercd -= 15
+			cd -= 20;
+		}
+
+		if(!item_owner.canUse)
+		{
+
+			EntFire("item_effect_"+item_preset.name+""+postfix, "Start", "", cd, null);
+			EntFire("item_button_"+item_preset.name+""+postfix, "UnLock", "", cd, null);
+			EntFire("item_"+item_preset.name+"_sprite"+postfix, "ShowSprite", "", cd, null);
+			EntFire("item_"+item_preset.name+"_light"+postfix, "TurnOn", "", cd, null);
+			StartCD(cd);
+		}
+
+		StartCounter(countercd);
+	}
+
+	EntFire("item_sound_use", "PlaySound", "", 0, null);
+
+	Entities.FindByName(null, "item_spawner_bio"+postfix).SpawnEntity();
+
+	local trigger = Entities.FindByName(null, "item_temp_bio_trigger");
+
+	trigger.GetScriptScope().dist = radius;
+	trigger.GetScriptScope().damage = item_preset.GetDamage((!pl.item_buff_radius) ? lvl : (lvl <= 1) ? 1 : lvl - 1) * 0.05;
+	trigger.GetScriptScope().slow = item_preset.GetTime(lvl);
+
+	local name = Time().tointeger();
+
+	for(local i = 1; i <= 3; i++)
+	{
+		if(lvl != i)
+			EntFire("item_temp_bio_effect"+i, "Kill", "", 0.00, null);
+	}
+
+	EntFire("item_temp_bio_effect"+lvl, "Start", "", 0, null);
+
+	EntFire("item_temp_bio_trigger", "AddOutPut", "targetname item_temp_bio_trigger"+name, 0, null);
+	EntFire("item_temp_bio_effect"+lvl, "AddOutPut", "targetname item_temp_bio_effect"+lvl+""+name, 0, null);
+
+	EntFire("item_temp_bio_trigger"+name, "Kill", "", worktime, null);
+	EntFire("item_temp_bio_effect"+lvl+""+name, "Kill", "", worktime, null);
+
+	if(Active_Boss != null)
+	{
+		EntFire("item_beam_"+item_preset.name+""+postfix, "TurnOn", "", 0.00, null);
+		EntFire("item_beam_"+item_preset.name+""+postfix, "TurnOff", "", 2.00, null);
+	}
+
+	Boss_Damage_Item(item_owner.name_right, (!pl.item_buff_radius) ? lvl : (lvl <= 1) ? 1 : lvl - 1);
+}
+
+
+
+function UsePoison()
+{
+	local item_owner = GetItemByButton(caller);
+	local postfix = item_owner.name;
+
+	local item_preset = GetItemPresetByName(item_owner.name_right);
+	local pl = GetPlayerClassByHandle(activator);
+
+	local lvl = pl.poison_lvl;
+	if(pl.item_buff_doble)
+		lvl--;
+	if(lvl <= 0)
+		lvl = 1;
+	if (CLASSIC_MOD)
+	{
+		lvl = 3;
+	}
+	local Worktime = item_preset.GetDuration(lvl);
+	local radius = item_preset.GetRadius(lvl);
+	local cd = item_preset.GetCD(lvl);
+
+	if(pl.item_buff_radius)
+	{
+		radius *= 1.3;
+	}
+
+	local result = item_owner.Use();
+
+	if(result == -1)
+		return;
+	if (ENT_WATCH_ENABLE)
+	{
+		ScriptPrintMessageChatAll("***\x04 "+pl.name+"\x01 {\x07"+pl.steamid+"\x01} 使用了\x06 剧毒\x01 "+((lvl==3) ? RED : (lvl==2) ? YELLOW : GREEN)+""+((lvl != null) ? lvl : 0)+"\x01 等级 ***");
+	}
+	if(!item_owner.canUse)
+	{
+		EntFire("item_"+item_preset.name+"_effect"+postfix, "Stop", "", 0, null);
+		EntFire("item_button_"+item_preset.name+""+postfix, "Lock", "", 0, null);
+		EntFire("item_"+item_preset.name+"_sprite"+postfix, "hidesprite", "", 0, null);
+		EntFire("item_"+item_preset.name+"_light"+postfix, "turnoff", "", 0, null);
+	}
+
+	if(pl.item_buff_turbo)
+	{
+		Worktime += 1.5;
+	}
+	if(pl.item_buff_recovery)
+	{
+		Worktime -= 1;
+	}
+
+
+	if(result == 1)
+	{
+		if(!item_owner.canUse)
+		{
+			if(pl.item_buff_turbo)
+			{
+				cd += 5;
+			}
+			if(pl.item_buff_recovery)
+			{
+				cd -= 5;
+			}
+
+			EntFire("item_"+item_preset.name+"_effect"+postfix, "Start", "", cd, null);
+			EntFire("item_button_"+item_preset.name+""+postfix, "UnLock", "", cd, null);
+			EntFire("item_"+item_preset.name+"_sprite"+postfix, "ShowSprite", "", cd, null);
+			EntFire("item_"+item_preset.name+"_light"+postfix, "TurnOn", "", cd, null);
+
+			StartCD(cd);
+		}
+	}
+	else if(result == 3)
+	{
+		local countercd = 20 * item_owner.maxcount;
+		cd = 32 * item_owner.maxcount;
+
+		if(pl.item_buff_turbo)
+		{
+			countercd += 5
+			cd += 10;
+		}
+		if(pl.item_buff_recovery)
+		{
+			countercd -= 5
+			cd -= 10;
+		}
+
+		if(!item_owner.canUse)
+		{
+			EntFire("item_"+item_preset.name+"_effect"+postfix, "Start", "", cd, null);
+			EntFire("item_button_"+item_preset.name+""+postfix, "UnLock", "", cd, null);
+			EntFire("item_"+item_preset.name+"_sprite"+postfix, "ShowSprite", "", cd, null);
+			EntFire("item_"+item_preset.name+"_light"+postfix, "TurnOn", "", cd, null);
+			StartCD(cd);
+		}
+
+		StartCounter(countercd);
+	}
+
+	EntFire("item_sound_use", "PlaySound", "", 0, null);
+
+	Entities.FindByName(null, "item_spawner_poison"+postfix).SpawnEntity();
+
+	local trigger = Entities.FindByName(null, "item_temp_poison_trigger");
+
+	trigger.GetScriptScope().lvl = lvl;
+	trigger.GetScriptScope().dist = radius;
+	trigger.GetScriptScope().damage = item_preset.GetDamage((!pl.item_buff_radius) ? lvl : (lvl <= 1) ? 1 : lvl - 1) * 0.05;
+	trigger.GetScriptScope().slow = item_preset.GetTime(lvl);
+	trigger.GetScriptScope().worktime = Worktime;
+	trigger.GetScriptScope().Level = lvl;
+
+	local name = Time().tointeger()
+
+	EntFire("item_temp_poison_effect", "AddOutPut", "targetname item_temp_poison_effect"+name, 0.01, null);
+	EntFire("item_temp_poison_effect_explosion1", "AddOutPut", "targetname item_temp_poison_effect_explosion1"+name, 0.01, null);
+	EntFire("item_temp_poison_effect_explosion2", "AddOutPut", "targetname item_temp_poison_effect_explosion2"+name, 0.01, null);
+	EntFire("item_temp_poison_effect_explosion3", "AddOutPut", "targetname item_temp_poison_effect_explosion3"+name, 0.01, null);
+	EntFire("item_temp_poison_touch", "AddOutPut", "targetname item_temp_poison_touch"+name, 0.01, null);
+	EntFire("item_temp_poison_trigger", "AddOutPut", "targetname item_temp_poison_trigger"+name, 0.01, null);
+	EntFire("item_temp_poison_effect_smoke", "AddOutPut", "targetname item_temp_poison_effect_smoke"+name, 0.01, null);
+
+	EntFire("item_temp_poison_trigger"+name, "RunScriptCode", "SelfDestroy()", 20.0, null);
+
+	if(Active_Boss != null)
+	{
+		EntFire("item_beam_"+item_preset.name+""+postfix, "TurnOn", "", 0.00, null);
+		EntFire("item_beam_"+item_preset.name+""+postfix, "TurnOff", "", 2.00, null);
+	}
+
+	Boss_Damage_Item(item_owner.name_right, (!pl.item_buff_radius) ? lvl : (lvl <= 1) ? 1 : lvl - 1);
+}
+
+function UseEarth()
+{
+	local item_owner = GetItemByButton(caller);
+	local postfix = item_owner.name;
+
+	local item_preset = GetItemPresetByName(item_owner.name_right);
+	local pl = GetPlayerClassByHandle(activator);
+
+	local lvl = pl.earth_lvl;
+	if(pl.item_buff_doble)
+		lvl--;
+	if(lvl <= 0)
+		lvl = 1;
+	if (CLASSIC_MOD)
+	{
+		lvl = 3;
+	}
+	local worktime = item_preset.GetDuration(lvl);
+	local hp = item_preset.GetDamage(lvl);
+	local cd = item_preset.GetCD(lvl);
+
+	if(pl.item_buff_radius)
+	{
+		hp *= 1.5;
+	}
+
+	local result = item_owner.Use();
+
+	if(result == -1)
+		return;
+	if (ENT_WATCH_ENABLE)
+	{
+		ScriptPrintMessageChatAll("***\x04 "+pl.name+"\x01 {\x07"+pl.steamid+"\x01} 使用了\x10 土\x01 "+((lvl==3) ? RED : (lvl==2) ? YELLOW : GREEN)+""+((lvl != null) ? lvl : 0)+"\x01 等级 ***");
+	}
+	if(!item_owner.canUse)
+	{
+		EntFire("item_effect_"+item_preset.name+""+postfix, "Stop", "", 0, null);
+		EntFire("item_button_"+item_preset.name+""+postfix, "Lock", "", 0, null);
+		EntFire("item_"+item_preset.name+"_sprite"+postfix, "hidesprite", "", 0, null);
+		EntFire("item_"+item_preset.name+"_light"+postfix, "turnoff", "", 0, null);
+	}
+
+	if(pl.item_buff_turbo)
+	{
+		worktime += 1.5;
+	}
+	if(pl.item_buff_recovery)
+	{
+		worktime -= 1;
+	}
+
+	if(result == 1)
+	{
+		if(!item_owner.canUse)
+		{
+			if(pl.item_buff_turbo)
+			{
+				cd += 15;
+			}
+			if(pl.item_buff_recovery)
+			{
+				cd -= 15;
+			}
+
+			EntFire("item_effect_"+item_preset.name+""+postfix, "Start", "", cd, null);
+			EntFire("item_button_"+item_preset.name+""+postfix, "UnLock", "", cd, null);
+			EntFire("item_"+item_preset.name+"_sprite"+postfix, "ShowSprite", "", cd, null);
+			EntFire("item_"+item_preset.name+"_light"+postfix, "TurnOn", "", cd, null);
+
+			StartCD(cd);
+		}
+	}
+	else if(result == 3)
+	{
+		local countercd = 100;
+		cd = 160;
+
+		if(pl.item_buff_turbo)
+		{
+			countercd += 15
+			cd += 20;
+		}
+		if(pl.item_buff_recovery)
+		{
+			countercd -= 15
+			cd -= 20;
+		}
+
+		if(!item_owner.canUse)
+		{
+			EntFire("item_effect_"+item_preset.name+""+postfix, "Start", "", cd, null);
+			EntFire("item_button_"+item_preset.name+""+postfix, "UnLock", "", cd, null);
+			EntFire("item_"+item_preset.name+"_sprite"+postfix, "ShowSprite", "", cd, null);
+			EntFire("item_"+item_preset.name+"_light"+postfix, "TurnOn", "", cd, null);
+			StartCD(cd);
+		}
+
+		StartCounter(countercd);
+	}
+
+	EntFire("item_sound_use", "PlaySound", "", 0, null);
+
+	Entities.FindByName(null, "item_spawner_earth"+postfix).SpawnEntity();
+
+	local trigger = Entities.FindByName(null, "item_temp_earth_trigger");
+
+	trigger.SetHealth(hp);
+
+	local name = Time().tointeger()
+	EntFire("item_temp_earth_trigger", "AddOutPut", "targetname item_temp_earth_trigger"+name, 0, null);
+	EntFire("item_temp_earth_trigger", "AddOutPut", "targetname item_temp_earth_trigger"+name, 0, null);
+
+	EntFire("item_temp_earth_trigger"+name, "Break", "", worktime, null);
+
+	Boss_Damage_Item(item_owner.name_right, lvl);
+}
+
+function UseGravity()
+{
+	local item_owner = GetItemByButton(caller);
+	local postfix = item_owner.name;
+
+	local item_preset = GetItemPresetByName(item_owner.name_right);
+	local pl = GetPlayerClassByHandle(activator);
+
+	local lvl = pl.gravity_lvl;
+	if(pl.item_buff_doble)
+		lvl--;
+	if(lvl <= 0)
+		lvl = 1;
+	if (CLASSIC_MOD)
+	{
+		lvl = 3;
+	}
+	local worktime = item_preset.GetDuration(lvl);
+	local radius = item_preset.GetRadius(lvl);
+	local cd = item_preset.GetCD(lvl);
+
+	if(pl.item_buff_turbo)worktime += 2;
+	if(pl.item_buff_radius)radius *= 1.3;
+
+	if(pl.item_buff_radius)
+	{
+		radius *= 1.3;
+	}
+
+	local result = item_owner.Use();
+
+	if(result == -1)
+		return;
+	if (ENT_WATCH_ENABLE)
+	{
+		ScriptPrintMessageChatAll("***\x04 "+pl.name+"\x01 {\x07"+pl.steamid+"\x01} 使用了\x0E 黑洞\x01 "+((lvl==3) ? RED : (lvl==2) ? YELLOW : GREEN)+""+((lvl != null) ? lvl : 0)+"\x01 等级 ***");
+	}
+	if(!item_owner.canUse)
+	{
+		EntFire("item_effect_"+item_preset.name+""+postfix, "Stop", "", 0, null);
+		EntFire("item_button_"+item_preset.name+""+postfix, "Lock", "", 0, null);
+		EntFire("item_"+item_preset.name+"_sprite"+postfix, "hidesprite", "", 0, null);
+		EntFire("item_"+item_preset.name+"_light"+postfix, "turnoff", "", 0, null);
+	}
+
+	if(pl.item_buff_turbo)
+	{
+		worktime += 1.5;
+	}
+	if(pl.item_buff_recovery)
+	{
+		worktime -= 1;
+	}
+
+	if(result == 1)
+	{
+		if(!item_owner.canUse)
+		{
+			if(pl.item_buff_turbo)
+			{
+				cd += 15;
+			}
+			if(pl.item_buff_recovery)
+			{
+				cd -= 15;
+			}
+
+			EntFire("item_effect_"+item_preset.name+""+postfix, "Start", "", cd, null);
+			EntFire("item_button_"+item_preset.name+""+postfix, "UnLock", "", cd, null);
+			EntFire("item_"+item_preset.name+"_sprite"+postfix, "ShowSprite", "", cd, null);
+			EntFire("item_"+item_preset.name+"_light"+postfix, "TurnOn", "", cd, null);
+
+			StartCD(cd);
+		}
+	}
+	else if(result == 3)
+	{
+		local countercd = 100;
+		cd = 160;
+
+		if(pl.item_buff_turbo)
+		{
+			countercd += 15
+			cd += 20;
+		}
+		if(pl.item_buff_recovery)
+		{
+			countercd -= 15
+			cd -= 20;
+		}
+
+		if(!item_owner.canUse)
+		{
+
+			EntFire("item_effect_"+item_preset.name+""+postfix, "Start", "", cd, null);
+			EntFire("item_button_"+item_preset.name+""+postfix, "UnLock", "", cd, null);
+			EntFire("item_"+item_preset.name+"_sprite"+postfix, "ShowSprite", "", cd, null);
+			EntFire("item_"+item_preset.name+"_light"+postfix, "TurnOn", "", cd, null);
+			StartCD(cd);
+		}
+
+		StartCounter(countercd);
+	}
+
+	EntFire("item_sound_use", "PlaySound", "", 0, null);
+
+	Entities.FindByName(null, "item_spawner_gravity"+postfix).SpawnEntity();
+
+	local trigger = Entities.FindByName(null, "item_temp_gravity_trigger");
+
+	trigger.GetScriptScope().dist = radius;
+	trigger.GetScriptScope().power = item_preset.GetDamage((!pl.item_buff_radius) ? lvl : (lvl <= 1) ? 1 : lvl - 1);
+
+	local name = Time().tointeger()
+
+	for(local i = 1; i <= 3; i++)
+	{
+		if(lvl != i)
+			EntFire("item_temp_gravity_effect"+i, "Kill", "", 0.00, null);
+	}
+
+	EntFire("item_temp_gravity_effect"+lvl, "Start", "", 0, null);
+
+	EntFire("item_temp_gravity_trigger", "AddOutPut", "targetname item_temp_gravity_trigger"+name, 0, null);
+	EntFire("item_temp_gravity_effect"+lvl, "AddOutPut", "targetname item_temp_gravity_effect"+lvl+""+name, 0, null);
+	EntFire("Item_temp_gravity_sound", "AddOutPut", "targetname Item_temp_gravity_sound"+name, 0, null);
+
+	EntFire("item_temp_gravity_trigger"+name, "RunScriptCode", "Disable()", worktime, null);
+	EntFire("item_temp_gravity_trigger"+name, "Kill", "", worktime+0.06, null);
+	EntFire("item_temp_gravity_effect"+lvl+""+name, "Kill", "", worktime, null);
+	EntFire("Item_temp_gravity_sound"+name, "Kill", "", worktime, null);
+
+	if(Active_Boss != null)
+	{
+		EntFire("item_beam_"+item_preset.name+""+postfix, "TurnOn", "", 0.00, null);
+		EntFire("item_beam_"+item_preset.name+""+postfix, "TurnOff", "", 2.00, null);
+	}
+
+	Boss_Damage_Item(item_owner.name_right, (!pl.item_buff_radius) ? lvl : (lvl <= 1) ? 1 : lvl - 1);
+}
+
+function UseFire()
+{
+	local item_owner = GetItemByButton(caller);
+	local postfix = item_owner.name;
+
+	local trigger = Entities.FindByName(null, "item_trigger_fire"+postfix);
+	if(trigger.GetScriptScope().ticking)
+		return;
+
+	local item_preset = GetItemPresetByName(item_owner.name_right);
+	local pl = GetPlayerClassByHandle(activator);
+
+	local lvl = pl.fire_lvl;
+	if(pl.item_buff_doble)
+		lvl--;
+	if(lvl <= 0)
+		lvl = 1;
+	if (CLASSIC_MOD)
+	{
+		lvl = 3;
+	}
+	local radius = item_preset.GetRadius(lvl);
+	local cd = item_preset.GetCD(lvl);
+	local worktime = item_preset.GetDuration(lvl);
+
+	if(pl.item_buff_radius)
+	{
+		radius *= 1.3;
+	}
+
+	local result = item_owner.Use();
+
+	if(result == -1)
+		return;
+	if (ENT_WATCH_ENABLE)
+	{
+		ScriptPrintMessageChatAll("***\x04 "+pl.name+"\x01 {\x07"+pl.steamid+"\x01} 使用了\x02 火\x01 "+((lvl==3) ? RED : (lvl==2) ? YELLOW : GREEN)+""+((lvl != null) ? lvl : 0)+"\x01 等级 ***");
+	}
+	if(!item_owner.canUse)
+	{
+		EntFire("item_effect_"+item_preset.name+""+postfix, "Stop", "", 0, null);
+		EntFire("item_button_"+item_preset.name+""+postfix, "Lock", "", 0, null);
+		EntFire("item_"+item_preset.name+"_sprite"+postfix, "hidesprite", "", 0, null);
+		EntFire("item_"+item_preset.name+"_light"+postfix, "turnoff", "", 0, null);
+	}
+
+	if(pl.item_buff_turbo)
+	{
+		worktime += 1.5;
+	}
+	if(pl.item_buff_recovery)
+	{
+		worktime -= 1;
+	}
+	if(result == 1)
+	{
+		if(!item_owner.canUse)
+		{
+			if(pl.item_buff_turbo)
+			{
+				cd += 15;
+			}
+			if(pl.item_buff_recovery)
+			{
+				cd -= 15;
+			}
+
+			EntFire("item_effect_"+item_preset.name+""+postfix, "Start", "", cd, null);
+			EntFire("item_button_"+item_preset.name+""+postfix, "UnLock", "", cd, null);
+			EntFire("item_"+item_preset.name+"_sprite"+postfix, "ShowSprite", "", cd, null);
+			EntFire("item_"+item_preset.name+"_light"+postfix, "TurnOn", "", cd, null);
+
+			StartCD(cd);
+		}
+	}
+	else if(result == 2)
+	{
+		EntFireByHandle(caller, "RunScriptCode", "useloc = false;", 0.00, null, null);
+		EntFireByHandle(caller, "RunScriptCode", "useloc = true;", worktime + 6.00, null, null);
+		StartCD(worktime + 6.00);
+	}
+	else if(result == 3)
+	{
+		local countercd = 100;
+		cd = 160;
+
+		if(pl.item_buff_turbo)
+		{
+			countercd += 15
+			cd += 20;
+		}
+		if(pl.item_buff_recovery)
+		{
+			countercd -= 15
+			cd -= 20;
+		}
+
+		if(!item_owner.canUse)
+		{
+			EntFire("item_effect_"+item_preset.name+""+postfix, "Start", "", cd, null);
+			EntFire("item_button_"+item_preset.name+""+postfix, "UnLock", "", cd, null);
+			EntFire("item_"+item_preset.name+"_sprite"+postfix, "ShowSprite", "", cd, null);
+			EntFire("item_"+item_preset.name+"_light"+postfix, "TurnOn", "", cd, null);
+			StartCD(cd);
+		}
+		else
+		{
+			EntFireByHandle(caller, "RunScriptCode", "useloc = false;", 0.00, null, null);
+			EntFireByHandle(caller, "RunScriptCode", "useloc = true;", worktime + 6.00, null, null);
+			StartCD(worktime + 6.00);
+		}
+
+		StartCounter(countercd);
+	}
+
+	EntFire("item_sound_use", "PlaySound", "", 0, null);
+
+	trigger.GetScriptScope().dist = radius;
+	trigger.GetScriptScope().damage = item_preset.GetDamage((!pl.item_buff_radius) ? lvl : (lvl <= 1) ? 1 : lvl - 1) * 0.05;
+	trigger.GetScriptScope().flametime = item_preset.GetTime(lvl);
+
+	EntFire("item_sound_fire"+postfix, "PlaySound", "", 0, null);
+
+	EntFire("item_effect_trigger_fire"+lvl+""+postfix, "Start", "", 0, null);
+	EntFire("item_trigger_fire"+postfix, "RunScriptCode", "Enable()", 0.01, null);
+
+	EntFire("item_trigger_fire"+postfix, "RunScriptCode", "Disable()", worktime, null);
+
+	// if(pl.item_buff_doble)
+	//     EntFire("item_effect_trigger_fire"+lvl+""+postfix, "DestroyImmediately", "", worktime, null);
+	// else
+	EntFire("item_effect_trigger_fire"+lvl+""+  postfix, "Stop", "", worktime, null);
+
+	if(Active_Boss != null)
+	{
+		EntFire("item_beam_"+item_preset.name+""+postfix, "TurnOn", "", 0.00, null);
+		EntFire("item_beam_"+item_preset.name+""+postfix, "TurnOff", "", 2.00, null);
+	}
+
+	Boss_Damage_Item(item_owner.name_right, (!pl.item_buff_radius) ? lvl : (lvl <= 1) ? 1 : lvl - 1);
+}
+
+function UseHeal()
+{
+	local item_owner = GetItemByButton(caller);
+	local postfix = item_owner.name;
+
+	local trigger = Entities.FindByName(null, "item_trigger_heal"+postfix);
+	if(trigger.GetScriptScope().ticking)
+		return;
+
+	local item_preset = GetItemPresetByName(item_owner.name_right);
+	local pl = GetPlayerClassByHandle(activator);
+
+	local lvl = pl.heal_lvl;
+	if(pl.item_buff_doble)
+		lvl--;
+	if(lvl <= 0)
+		lvl = 1;
+	if (CLASSIC_MOD)
+	{
+		lvl = 3;
+	}
+	local radius = item_preset.GetRadius(lvl);
+	local worktime = item_preset.GetDuration(lvl);
+	local cd = item_preset.GetCD(lvl);
+
+	if(pl.item_buff_radius)
+	{
+		radius *= 1.3;
+	}
+
+	local result = item_owner.Use();
+
+	if(result == -1)
+		return;
+	if (ENT_WATCH_ENABLE)
+	{
+		ScriptPrintMessageChatAll("***\x04 "+pl.name+"\x01 {\x07"+pl.steamid+"\x01} 使用了 治疗 "+((lvl==3) ? RED : (lvl==2) ? YELLOW : GREEN)+""+((lvl != null) ? lvl : 0)+"\x01 等级 ***");
+	}
+	if(!item_owner.canUse)
+	{
+		EntFire("item_effect_"+item_preset.name+""+postfix, "Stop", "", 0, null);
+		EntFire("item_button_"+item_preset.name+""+postfix, "Lock", "", 0, null);
+		EntFire("item_"+item_preset.name+"_sprite"+postfix, "hidesprite", "", 0, null);
+		EntFire("item_"+item_preset.name+"_light"+postfix, "turnoff", "", 0, null);
+	}
+
+	if(pl.item_buff_turbo)
+	{
+		worktime += 1.5;
+	}
+	if(pl.item_buff_recovery)
+	{
+		worktime -= 1;
+	}
+
+	if(result == 1)
+	{
+		if(!item_owner.canUse)
+		{
+			if(pl.item_buff_turbo)
+			{
+				cd += 15;
+			}
+			if(pl.item_buff_recovery)
+			{
+				cd -= 15;
+			}
+
+			EntFire("item_effect_"+item_preset.name+""+postfix, "Start", "", cd, null);
+			EntFire("item_button_"+item_preset.name+""+postfix, "UnLock", "", cd, null);
+			EntFire("item_"+item_preset.name+"_sprite"+postfix, "ShowSprite", "", cd, null);
+			EntFire("item_"+item_preset.name+"_light"+postfix, "TurnOn", "", cd, null);
+
+			StartCD(cd);
+		}
+	}
+	else if(result == 2)
+	{
+		EntFireByHandle(caller, "RunScriptCode", "useloc = false;", 0.00, null, null);
+		EntFireByHandle(caller, "RunScriptCode", "useloc = true;", worktime + 6.00, null, null);
+		StartCD(worktime + 6.00);
+	}
+	else if(result == 3)
+	{
+		local countercd = 100;
+		cd = 160;
+
+		if(pl.item_buff_turbo)
+		{
+			countercd += 15
+			cd += 20;
+		}
+		if(pl.item_buff_recovery)
+		{
+			countercd -= 15
+			cd -= 20;
+		}
+
+		if(!item_owner.canUse)
+		{
+			EntFire("item_effect_"+item_preset.name+""+postfix, "Start", "", cd, null);
+			EntFire("item_button_"+item_preset.name+""+postfix, "UnLock", "", cd, null);
+			EntFire("item_"+item_preset.name+"_sprite"+postfix, "ShowSprite", "", cd, null);
+			EntFire("item_"+item_preset.name+"_light"+postfix, "TurnOn", "", cd, null);
+			StartCD(cd);
+		}
+		else
+		{
+			EntFireByHandle(caller, "RunScriptCode", "useloc = false;", 0.00, null, null);
+			EntFireByHandle(caller, "RunScriptCode", "useloc = true;", worktime + 6.00, null, null);
+			StartCD(worktime + 6.00);
+		}
+
+		StartCounter(countercd);
+	}
+
+	EntFire("item_sound_use", "PlaySound", "", 0, null);
+
+	trigger.GetScriptScope().dist = radius;
+	trigger.GetScriptScope().worktime = worktime;
+	trigger.GetScriptScope().lvl = lvl;
+
+	EntFire("item_sound_heal"+postfix, "PlaySound", "", 0, null);
+
+	EntFire("item_effect_trigger_heal"+lvl+""+postfix, "Start", "", 0, null);
+	EntFire("item_trigger_heal"+postfix, "RunScriptCode", "Enable()", 0.01, null);
+
+	EntFire("item_trigger_heal"+postfix, "RunScriptCode", "Disable()", worktime, null);
+
+	// if(pl.item_buff_doble)
+	//     EntFire("item_effect_trigger_heal"+lvl+""+postfix, "DestroyImmediately", "", worktime, null);
+	// else
+	EntFire("item_effect_trigger_heal"+lvl+""+  postfix, "Stop", "", worktime, null);
+
+	Boss_Damage_Item(item_owner.name_right, (!pl.item_buff_radius) ? lvl : (lvl <= 1) ? 1 : lvl - 1);
+}
+
+function UsePotion()
+{
+	local item_owner = GetItemByButton(caller);
+	if(!item_owner.canUse)
+		return;
+
+	local postfix = item_owner.name;
+	local item_preset = GetItemPresetByName(item_owner.name_right);
+
+	local lvl = 1;
+
+	local worktime = item_preset.GetDuration(lvl);
+	local radius = item_preset.GetRadius(lvl);
+
+	local pl = GetPlayerClassByHandle(activator);
+	if (ENT_WATCH_ENABLE)
+	{
+		ScriptPrintMessageChatAll("***\x04 "+pl.name+"\x01 {\x07"+pl.steamid+"\x01} 使用了 药水 "+((lvl==3) ? RED : (lvl==2) ? YELLOW : GREEN)+""+((lvl != null) ? lvl : 0)+"\x01 等级 ***");
+	}
+	EntFire("item_sound_use", "PlaySound", "", 0, null);
+
+	local trigger = Entities.FindByName(null, "item_trigger_potion"+postfix);
+	trigger.GetScriptScope().dist = radius;
+		item_owner.cd = "E";
+	item_owner.canUse = false;
+
+	EntFire("item_effect_"+item_preset.name+""+postfix, "FadeAndKill", "", 0, null);
+
+	EntFire("item_effect_potion"+postfix, "FadeAndKill", "", 0, null);
+	EntFire("item_button_potion"+postfix, "Lock", "", 0, null);
+	EntFire("item_sound_potion"+postfix, "PlaySound", "", 0, null);
+
+	EntFire("item_effect_trigger_potion"+postfix, "Start", "", 0, null);
+	EntFire("item_trigger_potion"+postfix, "RunScriptCode", "Enable()", 0.01, null);
+
+	EntFire("item_trigger_potion"+postfix, "RunScriptCode", "Disable()", worktime, null);
+	EntFire("item_effect_trigger_potion"+postfix, "Stop", "", worktime - 0.25, null);
+}
+
+function UseAmmo()
+{
+	local item_owner = GetItemByButton(caller);
+	if(!item_owner.canUse)
+		return;
+
+	local postfix = item_owner.name;
+	local item_preset = GetItemPresetByName(item_owner.name_right);
+
+	local lvl = 1;
+
+	local worktime = item_preset.GetDuration(lvl);
+	local radius = item_preset.GetRadius(lvl);
+
+	local pl = GetPlayerClassByHandle(activator);
+	if (ENT_WATCH_ENABLE)
+	{
+		ScriptPrintMessageChatAll("***\x04 "+pl.name+"\x01 {\x07"+pl.steamid+"\x01} 使用了 弹药 "+((lvl==3) ? RED : (lvl==2) ? YELLOW : GREEN)+""+((lvl != null) ? lvl : 0)+"\x01 等级 ***");
+	}
+	EntFire("item_sound_use", "PlaySound", "", 0, null);
+
+	local trigger = Entities.FindByName(null, "item_trigger_"+item_preset.name+""+postfix);
+	trigger.GetScriptScope().dist = radius;
+	item_owner.cd = "E";
+	item_owner.canUse = false;
+
+	EntFire("item_effect_"+item_preset.name+""+postfix, "FadeAndKill", "", 0, null);
+
+	EntFire("item_effect_"+item_preset.name+""+postfix, "Stop", "", 0, null);
+	EntFire("item_button_"+item_preset.name+""+postfix, "Lock", "", 0, null);
+	EntFire("item_sound_"+item_preset.name+""+postfix, "PlaySound", "", 0, null);
+
+	EntFire("item_effect_trigger_"+item_preset.name+""+postfix, "Start", "", 0, null);
+	EntFire("item_trigger_"+item_preset.name+""+postfix, "RunScriptCode", "Enable()", 0.01, null);
+
+	EntFire("item_trigger_"+item_preset.name+""+postfix, "RunScriptCode", "Disable()", worktime, null);
+	EntFire("item_effect_trigger_"+item_preset.name+""+postfix, "Stop", "", worktime - 0.25, null);
+}
+
+function UsePhoenix()
+{
+	local item_owner = GetItemByButton(caller);
+	if(!item_owner.canUse)
+		return;
+
+	local postfix = item_owner.name;
+	local item_preset = GetItemPresetByName(item_owner.name_right);
+
+	local lvl = 1;
+
+	local worktime = item_preset.GetDuration(lvl);
+	local radius = item_preset.GetRadius(lvl);
+
+	local pl = GetPlayerClassByHandle(activator);
+	if (ENT_WATCH_ENABLE)
+	{
+		ScriptPrintMessageChatAll("***\x04 "+pl.name+"\x01 {\x07"+pl.steamid+"\x01} 使用了 菲尼克斯 "+((lvl==3) ? RED : (lvl==2) ? YELLOW : GREEN)+""+((lvl != null) ? lvl : 0)+"\x01 等级 ***");
+	}
+	EntFire("item_sound_use", "PlaySound", "", 0, null);
+
+	local trigger = Entities.FindByName(null, "item_trigger_"+item_preset.name+""+postfix);
+	trigger.GetScriptScope().dist = radius;
+		item_owner.cd = "E";
+	item_owner.canUse = false;
+
+	EntFire("item_effect_"+item_preset.name+""+postfix, "FadeAndKill", "", 0, null);
+
+	EntFire("item_effect_"+item_preset.name+""+postfix, "FadeAndKill", "", 0, null);
+	EntFire("item_button_"+item_preset.name+""+postfix, "Lock", "", 0, null);
+	EntFire("item_sound_"+item_preset.name+""+postfix, "PlaySound", "", 0, null);
+
+	EntFire("item_effect_trigger_"+item_preset.name+""+postfix, "Start", "", 0, null);
+	EntFire("item_trigger_"+item_preset.name+""+postfix, "RunScriptCode", "Enable()", 0.01, null);
+
+	EntFire("item_trigger_"+item_preset.name+""+postfix, "RunScriptCode", "Disable()", worktime, null);
+	EntFire("item_effect_trigger_"+item_preset.name+""+postfix, "Stop", "", worktime - 0.25, null);
+
+	Boss_Damage_Item(item_owner.name_right, 1);
+}
+
+function CheckItem(pl)
+{
+	local item_owner = GetItemByOwner(pl.handle);
+	if(item_owner == null)
+		return;
+	if(pl.item_buff_last && item_owner.allowRegen)
+	{
+		if(item_owner.count == 0)
+			item_owner.count = 1;
+
+		EntFireByHandle(item_owner.button, "FireUser4", "", 0, pl.handle, pl.handle);
+	}
+
+	local lvl = item_owner.lvl;
+	if (item_owner.RemoveOwner())
+	{
+		if (ENT_WATCH_ENABLE)
+		{
+			local item_name = "";
+			if(item_owner.name_right == "bio")
+				item_name = "\x0A 浮毒\x01 ";
+			if(item_owner.name_right == "ice")
+				item_name = "\x0B 冰\x01 ";
+			if(item_owner.name_right == "poison")
+				item_name = "\x06 剧毒\x01 ";
+			if(item_owner.name_right == "summon")
+				item_name = "\x09 召唤\x01 ";
+			if(item_owner.name_right == "fire")
+				item_name = "\x02 火\x01 ";
+			if(item_owner.name_right == "wind")
+				item_name = "\x05 风\x01 ";
+			if(item_owner.name_right == "electro")
+				item_name = "\x0C 电 \x01 ";
+			if(item_owner.name_right == "earth")
+				item_name = "\x10 土\x01 ";
+			if(item_owner.name_right == "gravity")
+				item_name = "\x0E 黑洞\x01 ";
+			if(item_owner.name_right == "ultimate")
+				item_name = "\x04 终极\x01 ";
+			if(item_owner.name_right == "heal")
+				item_name = " 治疗 ";
+			if(item_owner.name_right == "potion")
+				item_name = " 药水 ";
+			if(item_owner.name_right == "ammo")
+				item_name = " 弹药 ";
+			if(item_owner.name_right == "phoenix")
+				item_name = " 菲尼克斯 ";
+			if(item_owner.name_right == "Red XIII")
+				item_name = " 赤红13 ";
+			if(item_owner.name_right == "Yuffie")
+				item_name = " 尤菲-如月 ";
+			ScriptPrintMessageChatAll("***\x04 "+pl.name+"\x01 {\x07"+pl.steamid+"\x01} 死亡并丢弃了"+item_name+" "+((lvl==3) ? RED : (lvl==2) ? YELLOW : GREEN)+""+((lvl != null) ? lvl : 0)+"\x01 等级 ***")
+		}
+	}
+}
+
+SilenceTime <- 20;
+function UseSilence(time = SilenceTime)
+{
+	for (local i = 0; i < ITEM_OWNER.len(); i++)
+	{
+		if(!ITEM_OWNER[i].canSilence)
+			continue;
+
+		if(ITEM_OWNER[i].button != null)
+		{
+			local EnableTime = time;
+			EntFireByHandle(ITEM_OWNER[i].button, "RunScriptCode", "au = false", 0, null, null);
+			if(ITEM_OWNER[i].owner != null)
+			{
+				local pl = GetPlayerClassByHandle(ITEM_OWNER[i].owner);
+				EnableTime = pl.Get_Resist_From_First_lvl(EnableTime);
+			}
+			EntFireByHandle(ITEM_OWNER[i].button, "RunScriptCode", "au = true", EnableTime, null, null);
+		}
+	}
+}
+
+Active_Boss <- null;
+function Boss_Damage_Item(item_name, lvl = 1)
+{
+	if(Active_Boss != null)
+	{
+		local damage = null;
+		local heal = null;
+		local temp = null;
+		switch (Active_Boss)
+		{
+			case "Cactus":
+			temp = "Temp_Cactus";
+
+			if(item_name == "fire")
+			{
+				if(lvl == 1)
+					damage = 90;
+				else if(lvl == 2)
+					damage = 180;
+				else if(lvl == 3)
+					damage = 270;
+			}
+			else if(item_name == "shuriken")
+			{
+				damage = 50;
+			}
+			else if(item_name == "electro")
+			{
+				if(lvl == 1)
+					damage = 50;
+				else if(lvl == 2)
+					damage = 80;
+				else if(lvl == 3)
+					damage = 120;
+			}
+			else if(item_name == "gravity")
+			{
+				if(lvl == 1)
+					damage = 100;
+				else if(lvl == 2)
+					damage = 150;
+				else if(lvl == 3)
+					damage = 200;
+			}
+			else if(item_name == "ultimate")
+			{
+				if(lvl == 1)
+					damage = 1000;
+				else if(lvl == 2)
+					damage = 1500;
+				else if(lvl == 3)
+					damage = 2000;
+			}
+			else if(item_name == "bio")
+			{
+				if(lvl == 1)
+					heal = -1;
+				else if(lvl == 2)
+					heal = -2;
+				else if(lvl == 3)
+					heal = -3;
+			}
+			else if(item_name == "ice")
+			{
+				local time = 0;
+				if(lvl == 1)
+				{
+					time = 3;
+					damage = 50;
+				}
+				else if(lvl == 2)
+				{
+					time = 4;
+					damage = 80;
+				}
+				else if(lvl == 3)
+				{
+					time = 5;
+					damage = 120;
+				}
+
+				EntFire(temp, "RunScriptCode", "ItemEffect_Ice(" + time + ")", 0.00);
+			}
+
+			break;
+
+			case "NattakCave":
+			temp = "Temp_Gi_Nattak";
+
+			if(item_name == "electro")
+			{
+				if(lvl == 1)
+					damage = 200;
+				else if(lvl == 2)
+					damage = 300;
+				else if(lvl == 3)
+					damage = 400;
+			}
+			else if(item_name == "shuriken")
+			{
+				damage = 250;
+			}
+			else if(item_name == "wind")
+			{
+				if(lvl == 1)
+					damage = 250;
+				else if(lvl == 2)
+					damage = 350;
+				else if(lvl == 3)
+					damage = 450;
+			}
+			else if(item_name == "gravity")
+			{
+				if(lvl == 1)
+					damage = 350;
+				else if(lvl == 2)
+					damage = 500;
+				else if(lvl == 3)
+					damage = 650;
+			}
+			else if(item_name == "bio")
+			{
+				if(lvl == 1)
+					damage = 650;
+				else if(lvl == 2)
+					damage = 850;
+				else if(lvl == 3)
+					damage = 1050;
+				EntFire("Minion_Lake_effect*", "Kill", "", 0.00);
+			}
+			else if(item_name == "ice")
+			{
+				local time = 0;
+				if(lvl == 1)
+				{
+					time = 3;
+					damage = 700;
+				}
+				else if(lvl == 2)
+				{
+					time = 4;
+					damage = 1000;
+				}
+				else if(lvl == 3)
+				{
+					time = 5;
+					damage = 1300;
+				}
+
+				EntFire("Minion_Lake_effect*", "Kill", "", 0.00);
+				EntFire(temp, "RunScriptCode", "ItemEffect_Ice(" + time + ")", 0.00);
+			}
+			else if(item_name == "ultimate")
+			{
+				if(lvl == 1)
+					damage = -2.5;
+				else if(lvl == 2)
+					damage = -3.5;
+				else if(lvl == 3)
+					damage = -4.5;
+			}
+
+			else if(item_name == "poison")
+			{
+				if(lvl == 1)
+					heal = 300;
+				else if(lvl == 2)
+					heal = 500;
+				else if(lvl == 3)
+					heal = 700;
+			}
+			else if(item_name == "fire")
+			{
+				if(lvl == 1)
+					heal = -1;
+				else if(lvl == 2)
+					heal = -2;
+				else if(lvl == 3)
+					heal = -3;
+			}
+			else if(item_name == "phoenix")
+			{
+				damage = -1.5;
+			}
+
+			break;
+
+			case "NattakLast":
+			temp = "Temp_Extreme";
+
+			if(item_name == "electro")
+			{
+				if(lvl == 1)
+					damage = 50;
+				else if(lvl == 2)
+					damage = 100;
+				else if(lvl == 3)
+					damage = 150;
+			}
+			else if(item_name == "wind")
+			{
+				if(lvl == 1)
+					damage = 70;
+				else if(lvl == 2)
+					damage = 120;
+				else if(lvl == 3)
+					damage = 170;
+			}
+			else if(item_name == "shuriken")
+			{
+				damage = 100;
+			}
+			else if(item_name == "gravity")
+			{
+				if(lvl == 1)
+					damage = 100;
+				else if(lvl == 2)
+					damage = 150;
+				else if(lvl == 3)
+					damage = 200;
+			}
+			else if(item_name == "bio")
+			{
+				if(lvl == 1)
+					damage = 100;
+				else if(lvl == 2)
+					damage = 200;
+				else if(lvl == 3)
+					damage = 300;
+			}
+			else if(item_name == "ice")
+			{
+				local time = 0;
+				if(lvl == 1)
+				{
+					time = 3;
+					damage = 150;
+				}
+				else if(lvl == 2)
+				{
+					time = 4;
+					damage = 250;
+				}
+				else if(lvl == 3)
+				{
+					time = 5;
+					damage = 350;
+				}
+
+				EntFire(temp, "RunScriptCode", "ItemEffect_Ice(" + time + ")", 0.00);
+			}
+			else if(item_name == "ultimate")
+			{
+				if(lvl == 1)
+					damage = -3;
+				else if(lvl == 2)
+					damage = -4;
+				else if(lvl == 3)
+					damage = -5;
+			}
+
+			else if(item_name == "poison")
+			{
+				if(lvl == 1)
+					heal = 100;
+				else if(lvl == 2)
+					heal = 150;
+				else if(lvl == 3)
+					heal = 200;
+			}
+			else if(item_name == "fire")
+			{
+				if(lvl == 1)
+					heal = -2;
+				else if(lvl == 2)
+					heal = -3;
+				else if(lvl == 3)
+					heal = -4;
+			}
+			else if(item_name == "phoenix")
+			{
+				damage = -1.5;
+			}
+
+			break;
+
+			case "Reno":
+			temp = "Temp_Reno";
+
+			if(item_name == "gravity")
+			{
+				if(lvl == 1)
+					damage = 150;
+				else if(lvl == 2)
+					damage = 175;
+				else if(lvl == 3)
+					damage = 300;
+				EntFire(temp, "RunScriptCode", "PlaySound(Sound_Shit,1,1,0)", 0.00);
+			}
+			else if(item_name == "wind")
+			{
+				if(lvl == 1)
+					damage = 90;
+				else if(lvl == 2)
+					damage = 125;
+				else if(lvl == 3)
+					damage = 170;
+				EntFire(temp, "RunScriptCode", "PlaySound(Sound_Shit,1,1,0)", 0.00);
+			}
+			else if(item_name == "electro")
+			{
+				if(lvl == 1)
+					heal = -1;
+				else if(lvl == 2)
+					heal = -2;
+				else if(lvl == 3)
+					heal = -3;
+				EntFire(temp, "RunScriptCode", "PlaySound(Sound_Shit,1,1,0)", 0.00);
+			}
+			else if(item_name == "bio")
+			{
+				if(lvl == 1)
+					damage = 150;
+				else if(lvl == 2)
+					damage = 175;
+				else if(lvl == 3)
+					damage = 300;
+
+				EntFire(temp, "RunScriptCode", "PlaySound(Sound_Shit,1,1,0)", 0.00);
+			}
+			else if(item_name == "ice")
+			{
+				if(lvl == 1)
+					damage = 140;
+				else if(lvl == 2)
+					damage = 160;
+				else if(lvl == 3)
+					damage = 270;
+				EntFire(temp, "RunScriptCode", "PlaySound(Sound_Shit,1,1,0)", 0.00);
+			}
+			else if(item_name == "shuriken")
+			{
+				damage = 50;
+			}
+			else if(item_name == "fire")
+			{
+				if(lvl == 1)
+					damage = 170;
+				else if(lvl == 2)
+					damage = 260;
+				else if(lvl == 3)
+					damage = 350;
+				EntFire(temp, "RunScriptCode", "PlaySound(Sound_Shit,1,1,0)", 0.00);
+			}
+			else if(item_name == "poison")
+			{
+				if(lvl == 1)
+					damage = 25;
+				else if(lvl == 2)
+					damage = 35;
+				else if(lvl == 3)
+					damage = 50;
+				EntFire(temp, "RunScriptCode", "PlaySound(Sound_Shit,1,1,0)", 0.00);
+			}
+			else if(item_name == "ultimate")
+			{
+				if(lvl == 1)
+					damage = -2;
+				else if(lvl == 2)
+					damage = -3;
+				else if(lvl == 3)
+					damage = -4;
+				EntFire(temp, "RunScriptCode", "ItemEffect_Ultima()", 0.00);
+				EntFire(temp, "RunScriptCode", "PlaySound(Sound_Shit,1,1,0)", 0.00);
+			}
+			else if(item_name == "earth")
+			{
+				if(lvl == 1)
+					damage = 200;
+				else if(lvl == 2)
+					damage = 250;
+				else if(lvl == 3)
+					damage = 300;
+				EntFire(temp, "RunScriptCode", "PlaySound(Sound_Shit,1,1,0)", 0.00);
+			}
+			break;
+
+			case "AirBuster":
+			temp = "AirBuster_Move_Physbox";
+
+			if(item_name == "gravity")
+			{
+				if(lvl == 1)
+					heal = -1;
+				else if(lvl == 2)
+					heal = -2;
+				else if(lvl == 3)
+					heal = -3;
+			}
+			else if(item_name == "wind")
+			{
+				if(lvl == 1)
+					damage = 300;
+				else if(lvl == 2)
+					damage = 500;
+				else if(lvl == 3)
+					damage = 700;
+			}
+			else if(item_name == "shuriken")
+			{
+				damage = 100;
+			}
+			else if(item_name == "electro")
+			{
+				local time = 0;
+				if(lvl == 1)
+				{
+					time = 3;
+					damage = 400;
+				}
+				else if(lvl == 2)
+				{
+					time = 4;
+					damage = 600;
+				}
+				else if(lvl == 3)
+				{
+					time = 5;
+					damage = 800;
+				}
+				EntFire(temp, "RunScriptCode", "ItemEffect_Electro(" + time + ")", 0.00);
+			}
+			else if(item_name == "bio")
+			{
+				if(lvl == 1)
+					damage = 600;
+				else if(lvl == 2)
+					damage = 800;
+				else if(lvl == 3)
+					damage = 1000;
+			}
+			else if(item_name == "ice")
+			{
+				local time = 0;
+				if(lvl == 1)
+				{
+					time = 3;
+					damage = 500;
+				}
+				else if(lvl == 2)
+				{
+					time = 3;
+					damage = 650;
+				}
+				else if(lvl == 3)
+				{
+					time = 3;
+					damage = 800;
+				}
+				EntFire(temp, "RunScriptCode", "ItemEffect_Ice(" + time + ")", 0.00);
+			}
+			else if(item_name == "fire")
+			{
+				if(lvl == 1)
+					damage = 400;
+				else if(lvl == 2)
+					damage = 600;
+				else if(lvl == 3)
+					damage = 800;
+			}
+			else if(item_name == "poison")
+			{
+				if(lvl == 1)
+					damage = 300;
+				else if(lvl == 2)
+					damage = 450;
+				else if(lvl == 3)
+					damage = 600;
+			}
+			else if(item_name == "ultimate")
+			{
+				if(lvl == 1)
+					damage = -2;
+				else if(lvl == 2)
+					damage = -3;
+				else if(lvl == 3)
+					damage = -4;
+			}
+			else if(item_name == "earth")
+			{
+				if(lvl == 1)
+					damage = 250;
+				else if(lvl == 2)
+					damage = 400;
+				else if(lvl == 3)
+					damage = 550;
+			}
+			break;
+
+
+			case "Scorpion":
+			temp = "scorpion_hbox";
+
+			if(item_name == "gravity")
+			{
+				if(lvl == 1)
+					damage = 150;
+				else if(lvl == 2)
+					damage = 175;
+				else if(lvl == 3)
+					damage = 300;
+			}
+			else if(item_name == "shuriken")
+			{
+				damage = 50;
+			}
+			else if(item_name == "wind")
+			{
+				if(lvl == 1)
+					damage = 90;
+				else if(lvl == 2)
+					damage = 125;
+				else if(lvl == 3)
+					damage = 170;
+			}
+			else if(item_name == "electro")
+			{
+				if(lvl == 1)
+					damage = 50;
+				else if(lvl == 2)
+					damage = 75;
+				else if(lvl == 3)
+					damage = 100;
+			}
+			else if(item_name == "bio")
+			{
+				if(lvl == 1)
+					damage = 150;
+				else if(lvl == 2)
+					damage = 175;
+				else if(lvl == 3)
+					damage = 300;
+			}
+			else if(item_name == "ice")
+			{
+				if(lvl == 1)
+					damage = 140;
+				else if(lvl == 2)
+					damage = 160;
+				else if(lvl == 3)
+					damage = 270;
+			}
+			else if(item_name == "fire")
+			{
+				if(lvl == 1)
+					damage = 170;
+				else if(lvl == 2)
+					damage = 210;
+				else if(lvl == 3)
+					damage = 250;
+			}
+			else if(item_name == "poison")
+			{
+				if(lvl == 1)
+					heal = -1;
+				else if(lvl == 2)
+					heal = -2;
+				else if(lvl == 3)
+					heal = -3;
+			}
+			else if(item_name == "ultimate")
+			{
+				if(lvl == 1)
+					damage = -2;
+				else if(lvl == 2)
+					damage = -3;
+				else if(lvl == 3)
+					damage = -4;
+			}
+			else if(item_name == "earth")
+			{
+				if(lvl == 1)
+					heal = -1;
+				else if(lvl == 2)
+					heal = -2;
+				else if(lvl == 3)
+					heal = -3;
+			}
+			break;
+		}
+
+		if(temp != null)
+		{
+			if(heal != null)
+				EntFire(temp, "RunScriptCode", "AddHP(" + heal + ")", 0.00);
+			if(damage != null)
+				EntFire(temp, "RunScriptCode", "ItemDamage(" + damage + ")", 0.00);
+		}
+	}
+}
+///////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////
+//Player manager
+
+function ElseCheck()
+{
+	if(PLAYERS.len() > 0)
+	{
+		for(local i = 0; i < PLAYERS.len(); i++)
+		{
+			local pl = PLAYERS[i].handle;
+			if(MAPPER_STEAM_ID.len() > 0)
+			{
+				if(!PLAYERS[i].mapper)
+				{
+					for(local a = 0; a < MAPPER_STEAM_ID.len(); a++)
+					{
+						if(PLAYERS[i].steamid == MAPPER_STEAM_ID[a])
+						{
+							PLAYERS[i].mapper = true;
+							PLAYERS[i].vip = true;
+							ShowPlayerText(pl,"Thanks for map")
+						}
+					}
+				}
+			}
+			if(VIP_STEAM_ID.len() > 0)
+			{
+				if(!PLAYERS[i].vip)
+				{
+					for(local a = 0; a < VIP_STEAM_ID.len(); a++)
+					{
+						if(PLAYERS[i].steamid == VIP_STEAM_ID[a])
+						{
+							PLAYERS[i].vip = true;
+							ShowPlayerText(pl,"Thanks for supporting")
+						}
+					}
+				}
+			}
+			if(pl != null)
+			{
+				if(pl.IsValid())
+				{
+					if(pl.GetHealth() >= 600 && pl.GetTeam() == 2)
+					{
+						if(PLAYERS[i].setPerks == false)
+						{
+							if(PLAYERS[i].tskin != null)
+								pl.SetModel(PLAYERS[i].tskin);
+
+							local alldone = true;
+
+							if(PLAYERS[i].slow == false)
+								EntFireByHandle(SpeedMod, "ModifySpeed", (PLAYERS[i].ReturnSpeed()).tostring(), 0.1, pl, pl);
+							else
+								alldone = false;
+
+							if(PLAYERS[i].perkchameleon_lvl > 0)
+							{
+								pl.__KeyValueFromInt("rendermode", 1);
+								pl.__KeyValueFromInt("renderamt", (255 - (PLAYERS[i].perkchameleon_lvl * perkchameleon_chameleonperlvl)));
+							}
+
+							local hp = MaxHPZombie + PLAYERS[i].perkhp_zm_lvl * perkhp_zm_hpperlvl;
+							if (CLASSIC_MOD)
+							{
+								hp = MaxHPZombie_Classic;
+							}
+
+							pl.SetHealth(hp);
+							pl.SetMaxHealth(hp);
+
+							if(alldone)
+							{
+								local waffel_car = Entities.FindByName(null, "waffel_controller");
+								waffel_car.GetScriptScope().DestroyCar(pl);
+								EntFire("kojima_chest_" + PLAYERS[i].userid, "Kill", "", 0, null);
+								PLAYERS[i].setPerks = true;
+								PLAYERS[i].invalid = false;
+							}
+						}
+						local MaxHP = MaxHPZombie;
+						if (CLASSIC_MOD)
+						{
+							MaxHP = MaxHPZombie_Classic;
+						}
+						else if(PLAYERS[i].perkhp_zm_lvl > 0)
+						{
+							MaxHP += PLAYERS[i].perkhp_zm_lvl * perkhp_zm_hpperlvl;
+						}
+
+						if (pl.GetHealth() > MaxHP)
+						{
+							pl.SetHealth(MaxHP);
+							pl.SetMaxHealth(MaxHP);
+						}
+					}
+				}
+			}
+		}
+	}
+}
+
+function CheckValidInArr()
+{
+	if(PLAYERS.len() > 0 && once_check)
+	{
+		local Temp_Player_Arr = [];
+		for(local i = 0; i < PLAYERS.len(); i++)
+		{
+			if(PLAYERS[i].handle != null && PLAYERS[i].handle.IsValid())
+			{
+				Temp_Player_Arr.push(PLAYERS[i])
+			}
+		}
+		PLAYERS.clear();
+		for(local a = 0; a < Temp_Player_Arr.len(); a++)
+		{
+			PLAYERS.push(Temp_Player_Arr[a])
+		}
+		once_check = false;
+	}
+	return ElseCheck();
+}
+
+function Set_Player()
+{
+	if(!ValidHandleArr(activator))
+	{
+		PL_HANDLE.push(activator);
+	}
+}
+
+function Reg_Player()
+{
+	if(PL_HANDLE.len() > 0)
+	{
+		EntFireByHandle(self, "RunScriptCode", "Reg_Player();", 0.10, null, null);
+		TEMP_HANDLE = PL_HANDLE[0];
+		PL_HANDLE.remove(0);
+		if(TEMP_HANDLE.IsValid())
+		{
+			EntFireByHandle(eventproxy, "GenerateGameEvent", "", 0.00, TEMP_HANDLE, null);
+		}
+		else
+		{
+			return;
+		}
+	}
+}
+
+function ValidHandleArr(h)
+{
+	foreach(p in PLAYERS)
+	{
+		if(p.handle == h)
+		{
+			return true;
+		}
+	}
+	return false;
+}
+
+function GetPlayerByUserID(userid)
+{
+	foreach(p in PLAYERS)
+	{
+		if(p.userid == userid)
+		{
+			return p.handle;
+		}
+	}
+	return null;
+}
+
+function GetPlayerClassByHandle(handle)
+{
+	foreach(p in PLAYERS)
+	{
+		if(p.handle == handle)
+		{
+			return p;
+		}
+	}
+	return null;
+}
+
+function GetPlayerClassByUserID(uid)
+{
+	foreach(p in PLAYERS)
+	{
+		if(p.userid == uid)
+		{
+			return p;
+		}
+	}
+	return null;
+}
+
+function SetVipByHandle()
+{
+	foreach(p in PLAYERS)
+	{
+		if(p.handle == activator)
+		{
+			return p.SetMapper();
+		}
+	}
+	return null;
+}
+
+function GetPlayerClassByMoney()
+{
+	local player_class = null;
+	local money = 0;
+	foreach(p in PLAYERS)
+	{
+		if(p.money > money)
+		{
+			player_class = p;
+			money = p.money;
+		}
+	}
+	return player_class;
+}
+
+function GetItemPresetByName(name)
+{
+	foreach (i in Item_Preset)
+	{
+		if(name == i.name)
+		{
+			return i;
+		}
+	}
+	return null;
+}
+
+function GetItemPresetByName(name)
+{
+	foreach (i in Item_Preset)
+	{
+		if(name == i.name)
+		{
+			return i;
+		}
+	}
+	return null;
+}
+
+///////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////
+//event manager
+function PlayerJump()
+{
+	if(eventjump == null || eventjump != null && !eventjump.IsValid())
+	{
+		eventjump = Entities.FindByName(null, "pl_jump");
+	}
+
+	local userid = eventjump.GetScriptScope().event_data.userid;
+	local pl = GetPlayerClassByUserID(userid);
+	if(pl != null)
+	{
+		if(pl.mike != null)
+		{
+			EntFireByHandle(pl.mike, "FireUser2", "", 0, null, null);
+		}
+		if(pl.pet != null)
+		{
+			local pet_index = GetPetIndexByHandle(pl.pet);
+			if(pet_index != null)
+			{
+				pl.petstatus = "JUMP"
+				EntFireByHandle(pl.pet, "SetAnimation", Pet_Preset[pet_index].anim_jump, 0, null, null);
+				EntFireByHandle(pl.pet, "AddOutPut", "OnAnimationDone map_brush:RunScriptCode:PetStatus("+userid.tostring()+");:0:1", 0, pl.handle, pl.handle);
+			}
+		}
+		if(pl.invalid)
+		{
+			local handle = pl.handle;
+			handle.SetVelocity(Vector(handle.GetVelocity().x,handle.GetVelocity().y,0));
+		}
+	}
+}
+
+function PetStatus(userid)
+{
+	GetPlayerClassByUserID(userid).petstatus = "";
+}
+
+function GetPetIndexByHandle(handle)
+{
+	local model = handle.GetModelName()
+	for(local i = 0;i < Pet_Preset.len() ;i++)
+	{
+		if(model == Pet_Preset[i].model_path)
+		return i;
+	}
+	return null;
+}
+
+//needfix
+function PlayerDisconnect()
+{
+	if(eventdisconnect == null || eventdisconnect != null && !eventdisconnect.IsValid())
+	{
+		eventdisconnect = Entities.FindByName(null, "pl_disconnect");
+	}
+	local userid = eventdisconnect.GetScriptScope().event_data.userid;
+	local steamid = eventdisconnect.GetScriptScope().event_data.networkid;
+	local pl = GetPlayerClassByUserID(userid);
+	if(pl != null)
+	{
+		if(pl.steamid == steamid && pl.steamid != "BOT" && pl.steamid != "Reconnect PLS")
+		{
+			PLAYERS_SAVE.push(pl);
+		}
+	}
+}
+
+function PlayerHurt()
+{
+	if(eventhurt == null || eventhurt != null && !eventhurt.IsValid())
+	{
+		eventhurt = Entities.FindByName(null, "pl_hurt");
+	}
+
+	local userid = eventhurt.GetScriptScope().event_data.userid;
+	local attacker = eventhurt.GetScriptScope().event_data.attacker;
+
+	if(attacker == 0)
+		return;
+
+	local a = GetPlayerClassByUserID(attacker);
+
+	if(a == null)
+		return;
+
+	if(a.handle == null || !a.handle.IsValid())
+		return;
+
+	//thanks NiceShoot for this code
+	if(a.handle.GetTeam() == 3)
+	{
+		a.ShootTick(Shoot_OneMoney);
+	}
+}
+
+function PlayerDeath()
+{
+	if(eventdeath == null || eventdeath != null && !eventdeath.IsValid())
+	{
+		eventdeath = Entities.FindByName(null, "pl_death");
+	}
+
+	local victim_userid = eventdeath.GetScriptScope().event_data.userid;
+	local attacker_userid = eventdeath.GetScriptScope().event_data.attacker;
+
+	local victim_player_class = GetPlayerClassByUserID(victim_userid);
+	if(victim_player_class == null)
+		return;
+
+	CheckItem(victim_player_class);
+
+	victim_player_class.setPerks = false;
+	victim_player_class.invalid = false;
+
+	{
+		EntFire("kojima_chest_" + victim_userid, "Kill", "", 0, null);
+	}
+
+	if(victim_player_class.handle != null)
+	{
+		{
+			EntFireByHandle(self, "RunScriptCode", "AntiDebuff(1.0)", 0, victim_player_class.handle, victim_player_class.handle);
+		}
+
+		{
+			if(victim_player_class.handle.IsValid())
+				if(victim_player_class.handle.GetModelName() == T_VIP_MODEL)
+					EntFire("sound_sephiroth_death", "PlaySound", "", 0, null);
+		}
+		{
+			local waffel_car = Entities.FindByName(null, "waffel_controller");
+			waffel_car.GetScriptScope().DestroyCar(victim_player_class.handle);
+		}
+	}
+
+	{
+		if(victim_player_class.pet != null)
+			victim_player_class.pet.Destroy();
+	}
+
+	if(attacker_userid == 0)
+		return;
+
+	local attacker_player_class = GetPlayerClassByUserID(attacker_userid);
+	if(attacker_player_class == null)
+		return;
+
+	if(attacker_player_class.handle == victim_player_class.handle)
+		return;
+
+	if(attacker_player_class.handle == null || !attacker_player_class.handle.IsValid())
+		return;
+
+	if(attacker_player_class.handle.GetTeam() == 3)
+		attacker_player_class.infect++;
+
+	if(attacker_player_class.perksteal_lvl < 1)
+		return attacker_player_class.Add_money(Infect_Money);
+
+	local steal_value = attacker_player_class.perksteal_lvl * perksteal_stilleperlvl;
+	local luck_value = victim_player_class.perkluck_lvl * perksteal_stilleperlvl;
+	local min_value = steal_value - (luck_value * 0.5)
+	local max_value = perksteal_stilleperlvl + steal_value - (luck_value * 0.5)
+	local still_money = RandomInt(min_value, max_value);
+
+	if(still_money < 0)
+		return;
+
+	local target_money = victim_player_class.money;
+	if(target_money <= 10)
+		return;
+
+	if(attacker_player_class.handle.GetTeam() == 3)
+		still_money = still_money * 0.5;
+
+	if(target_money >= still_money)
+	{
+		victim_player_class.Minus_money(still_money);
+		attacker_player_class.Add_money(still_money + Infect_Money);
+	}
+	else
+	{
+		victim_player_class.Minus_money(target_money);
+		attacker_player_class.Add_money(target_money + Infect_Money);
+	}
+}
+
+function PrintPerksAll()
+{
+	local timer = 0.0;
+	local delay = 3.5;
+	EntFireByHandle(self, "RunScriptCode", "PrintPerksInfo()", timer, null, null);
+	EntFireByHandle(self, "RunScriptCode", "PrintPerksItem()", timer += delay, null, null);
+	EntFireByHandle(self, "RunScriptCode", "PrintPerksPerk()", timer += delay, null, null);
+	EntFireByHandle(self, "RunScriptCode", "PrintPerksPerk_hm()", timer += delay, null, null);
+	EntFireByHandle(self, "RunScriptCode", "PrintPerksPerk_zm()", timer += delay, null, null);
+}
+
+function PrintPerksInfo()
+{
+	local SayScript = Entities.FindByName(null, "pl_say");
+	local text = null;
+	foreach(pl in PLAYERS)
+	{
+		if(pl.handle == null || !pl.handle.IsValid())
+			continue;
+
+		text = SayScript.GetScriptScope().PrintText_Info(pl);
+		ShowPlayerText(pl.handle, text);
+	}
+}
+
+function PrintPerksItem()
+{
+	local SayScript = Entities.FindByName(null, "pl_say");
+	local text = null;
+	foreach(pl in PLAYERS)
+	{
+		if(pl.handle == null || !pl.handle.IsValid())
+			continue;
+
+		text = SayScript.GetScriptScope().PrintText_Item(pl);
+		ShowPlayerText(pl.handle, text);
+	}
+}
+
+function PrintPerksPerk()
+{
+	local SayScript = Entities.FindByName(null, "pl_say");
+	local text = null;
+	foreach(pl in PLAYERS)
+	{
+		if(pl.handle == null || !pl.handle.IsValid())
+			continue;
+
+		text = SayScript.GetScriptScope().PrintText_Perk(pl);
+		ShowPlayerText(pl.handle, text);
+	}
+}
+
+function PrintPerksPerk_hm()
+{
+	local SayScript = Entities.FindByName(null, "pl_say");
+	local text = null;
+	foreach(pl in PLAYERS)
+	{
+		if(pl.handle == null || !pl.handle.IsValid())
+			continue;
+
+		text = SayScript.GetScriptScope().PrintText_Perk_hm(pl);
+		ShowPlayerText(pl.handle, text);
+	}
+}
+
+function PrintPerksPerk_zm()
+{
+	local SayScript = Entities.FindByName(null, "pl_say");
+	local text = null;
+	foreach(pl in PLAYERS)
+	{
+		if(pl.handle == null || !pl.handle.IsValid())
+			continue;
+
+		text = SayScript.GetScriptScope().PrintText_Perk_zm(pl);
+		ShowPlayerText(pl.handle, text);
+	}
+}
+
+EndPropRotate <- [];
+
+class PropRotate
+{
+	handle = null;
+	limitOrigin = null;
+	up = false;
+	rotateside = null;
+	constructor(handle_)
+	{
+		this.handle = handle_;
+		this.limitOrigin = [];
+		this.limitOrigin.push(handle_.GetOrigin().z + RandomInt(-40, -25));
+		this.limitOrigin.push(handle_.GetOrigin().z + RandomInt(15, 35));
+		this.up = RandomInt(0,1);
+		this.rotateside = RandomInt(-1,1);
+	}
+
+	function Move()
+	{
+		if(this.up)
+		{
+			this.handle.SetOrigin(this.handle.GetOrigin() + Vector(0, 0, 1))
+			if(this.handle.GetOrigin().z >= this.limitOrigin[1])
+				this.up = false;
+		}
+		else
+		{
+			this.handle.SetOrigin(this.handle.GetOrigin() - Vector(0, 0, 1))
+			if(this.handle.GetOrigin().z <= this.limitOrigin[0])
+				this.up = true;
+		}
+
+		if(this.rotateside == 1)
+		{
+			local angels = this.handle.GetAngles();
+			this.handle.SetAngles(angels.x + 1, angels.y + 1, angels.z + 1)
+		}
+		else if(this.rotateside == 0)
+		{
+			local angels = this.handle.GetAngles();
+			this.handle.SetAngles(angels.x - 1, angels.y - 1, angels.z - 1)
+		}
+	}
+}
+function StartPropEnd()
+{
+	local handle = null;
+	local randomTimer;
+	local randomOrigin;
+	while(null != (handle = Entities.FindByName(handle,  "End_prop")))
+	{
+		randomTimer = RandomFloat(0.0, 5.0);
+		EntFireByHandle(self, "RunScriptCode", "EndPropRotate.push(PropRotate(activator))", randomTimer, handle, handle);
+	}
+	RotateStartPropEnd()
+}
+
+function RotateStartPropEnd()
+{
+	if(EndPropRotate.len() > 0)
+	{
+		foreach(Prop in EndPropRotate)
+		{
+			Prop.Move();
+		}
+	}
+	EntFireByHandle(self, "RunScriptCode", "RotateStartPropEnd()", 0.05, null, null);
+}
+
+function ShowCredits()
+{
+	local text;
+	text = "" + MapName.toupper();
+	ServerChat(Chat_pref + text);
+
+	text = "版本: " + ScriptVersion;
+	ServerChat(Chat_pref + text);
+
+	text = "地图作者: Kondik, Kotya, Friend, Mizz(Haryde) and Microrost"
+	ServerChat(Chat_pref + text);
+	
+	text = "地图翻译: 神々が恋した幻想郷"
+	ServerChat(Chat_pref + text);
+
+	// text = "More info - docs.google.com/spreadsheets/d/1V65cuBFta6nxAQkCVwxGqUJPMTszqJGQEUJFT_uKi9s"
+	// ServerChat(Chat_pref + text, 6.50);
+}
+
+function RandomEvent()
+{
+	local event = null;
+	EVENT_2XMONEY = false;
+	EVENT_EXTRAITEMS = false;
+	EVENT_EXTRACHEST = false;
+	EVENT_BLACKFRIDAY = false;
+
+	if (RandomInt(1, 100) <= 20)
+	{
+		if ((RandomInt(0, 5) == 0) && !BHOP_ENABLE)
+		{
+			SendToConsoleServerPS("sv_enablebunnyhopping 1");
+			event = "[事件] 不限速连跳";
+		}
+		else if (RandomInt(0, 4) == 0)
+		{
+			EVENT_EXTRACHEST = true;
+			event = "[事件] 在地图上生成更多宝箱";
+		}
+		else if (RandomInt(0, 3) == 0)
+		{
+			event = "[事件] 小鸡模式";
+			EntFire("Start_tp", "AddOutPut", "OnUser3 !activator:RunScriptCode:self.SetModel(CHICKEN_MODEL):0:-1", 3);
+		}
+		else if (RandomInt(0, 2) == 0)
+		{
+			EVENT_EXTRAITEMS = true;
+			event = "[事件] 在地图上生成更多神器";
+		}
+		else if (RandomInt(0, 1) == 0)
+		{
+			EVENT_2XMONEY = true;
+			event = "[事件] 每一种获取GIL的方式能获得2倍";
+		}
+		else
+		{
+			EVENT_BLACKFRIDAY = true;
+			event = "[事件] 黑色星期五 - " + EVENT_BLACKFRIDAY_COUNT + "% 折扣";
+		}
+	}
+
+	if (event != null)
+	{
+		ServerChat(Chat_pref + event);
+		ServerChat(Chat_pref + event, 1.0);
+		ServerChat(Chat_pref + event, 2.0);
+
+		event = event.toupper();
+		ShowCreditsText(event);
+	}
+}
+
+Chat_Buffer <- [];
+
+function ServerChat(text, delay = 0.00)
+{
+	if(delay > 0.00)
+	{
+		Chat_Buffer.push(text);
+		EntFireByHandle(self, "RunScriptCode", "ServerChatText(" + (Chat_Buffer.len() - 1) + ")", delay, null, null);
+	}
+	else
+		ScriptPrintMessageChatAll(text);
+}
+
+function ServerChatText(ID)
+{
+	ScriptPrintMessageChatAll(Chat_Buffer[ID]);
+}
+
+function OpenSpawn(delay)
+{
+	EntFire("City_Spawn_Door", "Open", "", delay, null);
+	EntFire("Spawn_Door_down", "Open", "", delay + 2.5, null);
+	EntFire("Spawn_Door_Up", "Open", "", delay + 4.0, null);
+	EntFire("City_Glass", "Break", "", delay, null);
+	if (Stage == 5)
+	{
+		EntFire("explosion", "RunScriptCode", "CreateExplosion(Vector(6744,-2920,-112),84,100)", delay - 0.05);
+
+		EntFire("explosion", "RunScriptCode", "CreateExplosion(Vector(5640,-3704,80),256,100)", delay + 7.05);
+		EntFire("explosion", "RunScriptCode", "CreateExplosion(Vector(4832,-4096,80),256,100)", delay + 9.55);
+		EntFire("explosion", "RunScriptCode", "CreateExplosion(Vector(4288,-4416,336),256,100)", delay + 12.05);
+		EntFire("explosion", "RunScriptCode", "CreateExplosion(Vector(3560,-3696,584),256,100)", delay + 14.55);
+	}
+	EntFire("Shop_Block", "Break", "", delay + 7.00, null);
+	EntFire("spawntoshop_travel_trigger", "Kill", "", delay, null);
+}
+
+function ToggleParticles()
+{
+	EntFire("shop_item_particle", "Stop", "", 0.50, null);
+	EntFire("perk_particle", "Stop", "", 0.50, null);
+	EntFire("kojima_*", "Stop", "", 0.50, null);
+
+	EntFire("shop_item_particle", "Start", "", 1.00, null);
+	EntFire("perk_particle", "Start", "", 1.00, null);
+	EntFire("kojima_main_particle", "Start", "", 1.00, null);
+	EntFire("Spawn_Fire", "StartFire", "", 1.00, null);
+	EntFire("bar_Fire", "StartFire", "", 1.00);
+
+	DisabledOldParticles();
+}
+
+function Trigger_City_Gate()
+{
+	local timer = 10.0
+	local text;
+
+	text = "城镇大门将在 "+timer+" 秒后打开"
+	ServerChat(Chat_pref + text);
+	EntFire("cmd","Command","say 城镇大门将在"+timer+"秒后打开", 0);
+
+	EntFire("City_Gate", "Open", "", timer);
+	if(Stage == 4 || Stage == 5)
+	{
+		EntFire("explosion", "RunScriptCode", "CreateExplosion(Vector(2846,-3937,136),350,500)", timer - 0.1);
+
+		EntFire("explosion", "RunScriptCode", "CreateExplosion(Vector(3012,-4659,337),350,200)", timer - 0.05);
+		EntFire("City_Gate", "Kill", "", timer - 0.05);
+		EntFire("Temp_City_Gate", "ForceSpawn", "", timer);
+	}
+}
+
+function Trigger_Left_Side_Path()
+{
+	local timer = 12.0
+	local text;
+
+	text = "左边的路将在 "+timer+" 秒后打开"
+	ServerChat(Chat_pref + text);
+	EntFire("cmd","Command","say 左边的路将在"+timer+"秒后打开", 0);
+
+	EntFire("Hold1_0_Clip", "Break", "", timer);
+
+	EntFire("explosion", "RunScriptCode", "CreateExplosion(Vector(1706,-4718,907),180,99)", timer - 0.1);
+}
+
+function Trigger_Right_Side_Path()
+{
+	local timer = 13.0
+	local text;
+
+	text = "右边的路将在 "+timer+" 秒后打开"
+	ServerChat(Chat_pref + text);
+	EntFire("cmd","Command","say 右边的路将在"+timer+"秒后打开", 0);
+
+	EntFire("Hold1_2_Clip", "Break", "", timer);
+
+	EntFire("explosion", "RunScriptCode", "CreateExplosion(Vector(1455,-2230,976),180,99)", timer - 0.1);
+}
+
+function Trigger_Cave_Bar_Lower_Path()
+{
+	local timer = 5.0
+	local text;
+
+	text = "酒吧下面的路将在 "+timer+" 秒后打开"
+	ServerChat(Chat_pref + text);
+	EntFire("cmd","Command","say 酒吧下面的路将在"+timer+"秒后打开", 0);
+
+	EntFire("Hold1_1_Clip", "Break", "", timer);
+
+	EntFire("explosion", "RunScriptCode", "CreateExplosion(Vector(-138,-1130,512),80,99)", timer - 0.1);
+}
+
+function Trigger_Cave_Bar_Up_Path()
+{
+	local timer = 4.0
+	local text;
+
+	text = "我们快到宇宙峡谷了"
+	EntFire("cmd","Command","say 我们快到宇宙峡谷了---"+timer, 0);
+	ServerChat(Chat_pref + text);
+
+	EntFire("Hold1_Clip", "Break", "", timer);
+
+	EntFire("explosion", "RunScriptCode", "CreateExplosion(Vector(-791,-862,1088),84,80)", timer - 0.1);
+}
+
+function Trigger_CosmoBar()
+{
+	if(Stage == 1)
+	{
+		local text;
+		text = "自从你被劫持后已经好久不见了，赤红13";
+		ServerChat(OldMan_pref + text, 10);
+
+		text = "我很高兴看到你完好无损地活了下来，即使希望渺茫";
+		ServerChat(OldMan_pref + text, 13);
+
+		text = "如果没有这些人的帮助是不可能的，现在我们在一起旅行";
+		ServerChat(RedX_pref + text, 16);
+
+		text = "我们离开之前能做点什么吗?";
+		ServerChat(RedX_pref + text, 19);
+
+		text = "我很担心基族洞穴，你父亲很久以前为了保护村子牺牲了自己.";
+		ServerChat(OldMan_pref + text, 22);
+
+		text = "看起来远古的邪恶力量已经被唤醒了";
+		ServerChat(OldMan_pref + text, 25);
+
+		text = "好吧，让我们来看看这种邪恶有多么严重";
+		ServerChat(RedX_pref + text, 28);
+
+		text = "我会在天文台等你们，祝你们好运!";
+		ServerChat(RedX_pref + text, 31);
+
+		text = "鬼魂是不存在的，对吧?";
+		ServerChat(Tifa_pref + text, 35);
+
+		text = "你不了解我的村子.";
+		ServerChat(RedX_pref + text, 38);
+
+		text = "说实话，我也不了解你";
+		ServerChat(Tifa_pref + text, 41);
+
+		text = "三年前，在神罗的士兵把我带走之前这里曾经是我的家";
+		ServerChat(RedX_pref + text, 44);
+
+		text = "从那以后我就一直是实验室里的小白鼠";
+		ServerChat(RedX_pref + text, 47);
+
+		text = "抱歉，但我不习惯你说话更别提我有多怕鬼了.";
+		ServerChat(Tifa_pref + text, 50);
+
+		text = "别担心，我们有的是时间互相了解";
+		ServerChat(RedX_pref + text, 53);
+
+		text = "我同意";
+		ServerChat(Tifa_pref + text, 56);
+	}
+	if(Stage == 1 || Stage == 2)
+	{
+		local text;
+
+		text = "酒吧会在10秒后打开"
+		ServerChat(Chat_pref + text);
+		EntFire("cmd","Command","say 酒吧会在10秒后打开", 0);
+
+		text = "僵尸来了，在我们打开后门之前防守宇宙酒吧25秒"
+		ServerChat(Chat_pref + text, 7);
+		EntFire("cmd","Command","say 僵尸来了，在我们打开后门之前防守宇宙酒吧25秒", 7);
+
+		text = "还剩5秒"
+		ServerChat(Chat_pref + text, 27);
+
+		text = "撤退"
+		ServerChat(Chat_pref + text, 32);
+
+		EntFire("Hold2_Door", "Open", "", 10.00);
+		EntFire("Cosmo_Bar_Glasses", "Break", "", 12.00);
+
+		EntFire("Hold3_Door", "Open", "", 32.00);
+		EntFire("Hold3_Vent", "Break", "", 35.00);
+		EntFire("UpVillage_Border", "Kill", "", 35.00);
+		EntFire("UpVillage_Border_fence", "Kill", "", 42.00);
+	}
+	else if(Stage == 4 || Stage == 5)
+	{
+		local text;
+
+		text = "酒吧会在5秒后打开，小心爆炸"
+		ServerChat(Chat_pref + text);
+		EntFire("cmd","Command","say 酒吧会在5秒后打开，小心爆炸", 0);
+
+		text = "僵尸来了，在我们打开后门之前防守宇宙酒吧28秒";
+		ServerChat(Chat_pref + text, 7);
+		EntFire("cmd","Command","say 僵尸来了，在我们打开后门之前防守宇宙酒吧28秒", 7);
+
+		text = "还剩5秒"
+		ServerChat(Chat_pref + text, 30);
+
+		text = "撤退"
+		ServerChat(Chat_pref + text, 35);
+
+		EntFire("Hold2_Door", "Open", "", 4.50);
+		EntFire("Hold2_Door", "Kill", "", 5.00);
+		EntFire("Cosmo_Bar_Glasses", "Break", "", 5.00);
+
+		EntFire("lvl3_Break", "Break", "", 5.00);
+
+
+		EntFire("explosion", "RunScriptCode", "CreateExplosion(Vector(-1549,-1103,1193),228,100,true)", 5.00);
+		EntFire("explosion", "RunScriptCode", "CreateExplosion(Vector(-1550,-1295,1193),228,100,true)", 5.01);
+
+		if(Stage == 5)
+		{
+			EntFire("lvl4_Break", "Break", "", 5.00);
+			EntFire("explosion", "RunScriptCode", "CreateExplosion(Vector(-1848,-1224,1640),256,100)", 4.95);
+		}
+
+		EntFire("Cosmo_Bar_Door", "Kill", "", 5.00);
+		EntFire("Hold3_Door", "Open", "", 35.00);
+		EntFire("Hold3_Vent", "Break", "", 38.00);
+		EntFire("UpVillage_Border", "Kill", "", 38.00);
+		EntFire("UpVillage_Border_fence", "Kill", "", 44.00);
+	}
+
+
+	EntFire("Map_TP_1", "Enable", "", 40.00);
+
+	{
+		EntFire("info_perk_hp_hm", "Kill", "", 40.00);
+		EntFire("shop_perk_hp_hm", "Kill", "", 40.00);
+
+		EntFire("info_perk_resist_hm", "Kill", "", 40.00);
+		EntFire("shop_perk_resist_hm", "Kill", "", 40.00);
+
+		EntFire("info_perk_luck", "Kill", "", 40.00);
+		EntFire("shop_perk_luck", "Kill", "", 40.00);
+
+		EntFire("info_perk_huckster", "Kill", "", 40.00);
+		EntFire("shop_perk_huckster", "Kill", "", 40.00);
+
+		EntFire("info_perk_steal", "Kill", "", 40.00);
+		EntFire("shop_perk_steal", "Kill", "", 40.00);
+
+		EntFire("info_perk_hp_zm", "Kill", "", 40.00);
+		EntFire("shop_perk_hp_zm", "Kill", "", 40.00);
+
+		EntFire("info_perk_speed", "Kill", "", 40.00);
+		EntFire("shop_perk_speed", "Kill", "", 40.00);
+
+		EntFire("info_perk_chameleon", "Kill", "", 40.00);
+		EntFire("shop_perk_chameleon", "Kill", "", 40.00);
+
+		EntFire("info_perk_resist_zm", "Kill", "", 40.00);
+		EntFire("shop_perk_resist_zm", "Kill", "", 40.00);
+
+		EntFire("perk_reset", "Kill", "", 40.00);
+
+		EntFire("info_item_buff_radius", "Kill", "", 40.00);
+		EntFire("shop_item_buff_radius", "Kill", "", 40.00);
+
+		EntFire("info_item_buff_last", "Kill", "", 40.00);
+		EntFire("shop_item_buff_last", "Kill", "", 40.00);
+
+		EntFire("info_item_buff_double", "Kill", "", 40.00);
+		EntFire("shop_item_buff_double", "Kill", "", 40.00);
+
+		EntFire("info_item_buff_turbo", "Kill", "", 40.00);
+		EntFire("shop_item_buff_turbo", "Kill", "", 40.00);
+
+		EntFire("info_item_buff_reset", "Kill", "", 40.00);
+		EntFire("shop_item_buff_reset", "Kill", "", 40.00);
+
+		EntFire("info_item_buff_recovery", "Kill", "", 40.00);
+		EntFire("shop_item_buff_recovery", "Kill", "", 40.00);
+
+
+		EntFire("info_item_gravity", "Kill", "", 40.00);
+		EntFire("shop_item_gravity", "Kill", "", 40.00);
+
+		EntFire("info_item_summon", "Kill", "", 40.00);
+		EntFire("shop_item_summon", "Kill", "", 40.00);
+
+		EntFire("info_item_earth", "Kill", "", 40.00);
+		EntFire("shop_item_earth", "Kill", "", 40.00);
+
+		EntFire("info_item_wind", "Kill", "", 40.00);
+		EntFire("shop_item_wind", "Kill", "", 40.00);
+
+		EntFire("info_item_heal", "Kill", "", 40.00);
+		EntFire("shop_item_heal", "Kill", "", 40.00);
+
+		EntFire("info_item_ultimate", "Kill", "", 40.00);
+		EntFire("shop_item_ultimate", "Kill", "", 40.00);
+
+		EntFire("info_item_poison", "Kill", "", 40.00);
+		EntFire("shop_item_poison", "Kill", "", 40.00);
+
+		EntFire("info_item_fire", "Kill", "", 40.00);
+		EntFire("shop_item_fire", "Kill", "", 40.00);
+
+		EntFire("info_item_bio", "Kill", "", 40.00);
+		EntFire("shop_item_bio", "Kill", "", 40.00);
+
+		EntFire("info_item_ice", "Kill", "", 40.00);
+		EntFire("shop_item_ice", "Kill", "", 40.00);
+
+		EntFire("info_item_electro", "Kill", "", 40.00);
+		EntFire("shop_item_electro", "Kill", "", 40.00);
+
+		EntFire("info_glow_ammo", "Kill", "", 40.00);
+		EntFire("shop_item_ammo", "Kill", "", 40.00);
+		EntFire("info_item_ammo", "Kill", "", 40.00);
+
+		EntFire("info_glow_phoenix", "Kill", "", 40.00);
+		EntFire("shop_item_phoenix", "Kill", "", 40.00);
+		EntFire("info_item_phoenix", "Kill", "", 40.00);
+
+		EntFire("info_glow_potion", "Kill", "", 40.00);
+		EntFire("shop_item_potion", "Kill", "", 40.00);
+		EntFire("info_item_potion", "Kill", "", 40.00);
+	}
+
+	EntFire("shop_travel_trigger", "Kill", "", 40.00);
+	EntFire("shop_stock", "Kill", "", 40.00);
+	EntFire("shop_reroll", "Kill", "", 40.00);
+
+	EntFire("kojima_main_trigger", "Kill", "", 40.00)
+
+	EntFire("City_Spawn_Doorv2", "Kill", "", 40.00);
+	EntFire("City_Spawn_Door", "Kill", "", 40.00);
+	EntFire("Spawn_Lift*", "Kill", "", 40.00);
+	EntFire("Waffel_Set", "Kill", "", 40.00);
+	EntFire("Ebaniy_Freind_Move", "Kill", "", 39.90);
+	EntFire("Ebaniy_Freind*", "Kill", "", 40.00);
+	EntFire("Ebaniy_Haryde*", "Kill", "", 40.00);
+	EntFire("t_trigger", "Kill", "", 40.00);
+	EntFire("t_skin", "Kill", "", 40.00);
+	EntFire("ct_trigger", "Kill", "", 40.00);
+	EntFire("ct_skin", "Kill", "", 40.00);
+	EntFire("ring*", "Kill", "", 40.00);
+	EntFire("ebani_rot_etogo_kazino*", "Kill", "", 40.00);
+	EntFire("white", "Kill", "", 40.00);
+	EntFire("green", "Kill", "", 40.00);
+	EntFire("red", "Kill", "", 40.00);
+	EntFire("casino*", "Kill", "", 40.00);
+	EntFire("hud_casino", "Kill", "", 40.00);
+	EntFire("texture_tablo*", "Kill", "", 40.00);
+	EntFire("Spawn_Door*", "Kill", "", 40.00);
+
+	EntFire("Temp_AfterBar", "ForceSpawn", "", 35.00);
+	EntFire("Canyon_Fire", "StartFire", "", 36.00);
+}
+
+function Trigger_Rock()
+{
+	local text;
+
+	EntFire("Hold4_Bomb_Sprite", "FireUser1", "", 0);
+	if(Stage == 4 || Stage == 5)
+		EntFire("lvl3_Wood_Door", "Break", "", 0);
+
+	if(Stage == 1)
+		EntFire("Hold5_Rock", "Kill", "", 0);
+
+	// if(Stage == 2)
+	// {
+	// 	text = "I wonder why locals are so cautious. Kaktuars are a peaceful kind";
+	// 	ServerChat(Tifa_pref + text, 30.00);
+
+	// 	text = "it's no ordinary Kaktuar. There are myths that there is a legendary kaktuar that can walk";
+	// 	ServerChat(RedX_pref + text, 33.00);
+
+	// 	text = "That legendary kaktuar attacks everyone indiscriminately.";
+	// 	ServerChat(RedX_pref + text, 36.00);
+	// }
+
+	local timer = 0;
+	// if(Stage == 2)
+	// 	timer = 1;
+	// if(Stage == 4)
+	// 	timer = 1;
+	// if(Stage == 5)
+	// 	timer = 1;
+
+	if (Stage == 5)
+	{
+		EntFire("explosion", "RunScriptCode", "CreateExplosion(Vector(-2704,-3760,1672),256,100)", 10 + timer);
+	}
+
+	text = "炸药将在 " + (20 + timer) + " 秒后炸开岩石"
+	ServerChat(Chat_pref + text);
+	EntFire("cmd","Command","say 炸药将在" + (20 + timer) + "秒后炸开岩石", 0);
+
+	text = "还剩5秒"
+	ServerChat(Chat_pref + text, 15 + timer);
+
+	text = "撤退"
+	ServerChat(Chat_pref + text, 20 + timer);
+
+	EntFire("Hold4_Bomb_Sprite", "AddOutput", "OnUser1 Hold4_Bomb_Sprite:ToggleSprite::0.3:-1", 15 + timer);
+	EntFire("Hold4_Bomb_Sprite", "AddOutput", "OnUser1 Hold4_Bomb_Sprite:ToggleSprite::0.5:-1", 15 + timer);
+	EntFire("Hold4_Bomb_Sprite", "AddOutput", "OnUser1 Hold4_Bomb_Sprite:ToggleSprite::0.6:-1", 20 + timer);
+	EntFire("Hold4_Bomb_Sprite", "AddOutput", "OnUser1 Hold4_Bomb_Sprite:ToggleSprite::0.8:-1", 20 + timer);
+	EntFire("Hold4_Rock", "Break", "", 20.05 + timer);
+
+	EntFire("Hold4_Clip", "Toggle", "", 20.05 + timer);
+	EntFire("Hold4_Bomb_Sprite", "Kill", "", 20.05 + timer);
+	EntFire("Hold4_Bomb", "Kill", "", 20.05 + timer);
+
+	EntFire("explosion", "RunScriptCode", "CreateExplosion(Vector(-4698,-3752,1870),256,100)", 20 + timer);
+	EntFire("explosion", "RunScriptCode", "CreateExplosion(Vector(-4620,-4268,1758),228,100)", 20.01 + timer);
+	EntFire("explosion", "RunScriptCode", "CreateExplosion(Vector(-4718,-4333,2159),228,100)", 20.02 + timer);
+
+	EntFire("music01", "RunScriptCode", "GetMusicExplosion();", 20.05 + timer);
+
+	EntFire("City_Gate", "Kill", "", 0.00);
+	EntFire("perk_particle", "Kill", "", 0.00);
+	EntFire("Text", "Kill", "", 0.00);
+	EntFire("Spawn_props", "Kill", "", 0.00);
+	EntFire("City_Gate_Open", "Kill", "", 0.00);
+	EntFire("Ship_break", "Kill", "", 0.00);
+	EntFire("Hold1*", "Kill", "", 0);
+
+	EntFire("Map_TD", "AddOutput", "origin -2680 -1296 1228", 0.00);
+	EntFire("Map_TP_2", "Enable", "", 1.00);
+}
+
+function Trigger_Cave_First()
+{
+	local text;
+
+	text = "大门将在25秒后打开"
+	ServerChat(Chat_pref + text);
+	EntFire("cmd","Command","say 大门将在25秒后打开", 0);
+
+	text = "还剩5秒"
+	ServerChat(Chat_pref + text, 20);
+
+	text = "撤退"
+	ServerChat(Chat_pref + text, 25);
+
+	if(Stage == 1)
+	{
+		text = "你能把这么多设备塞进一个洞里真是太神奇了"
+		ServerChat(Tifa_pref + text, 5);
+
+		text = "好的,但是我们只装备了上层，下层是禁区."
+		ServerChat(RedX_pref + text, 10);
+
+		text = "那里是否住着一个邪恶的鬼魂?"
+		ServerChat(Tifa_pref + text, 15);
+
+		text = "我希望这只是老头子的想象."
+		ServerChat(RedX_pref + text, 20);
+	}
+	else if(Stage == 4)
+	{
+		text = "我们不能以他现在的形态打败他，他的真身在别的地方."
+		ServerChat(RedX_pref + text, 5);
+
+		text = "在他暴露真身之前，我们得先解决他的幻象."
+		ServerChat(RedX_pref + text, 10);
+
+		text = "为什么现在才告诉我?"
+		ServerChat(Tifa_pref + text, 15);
+
+		text = "上次我们逃离山洞的时候，我听到他在重生之角的笑声."
+		ServerChat(RedX_pref + text, 20);
+
+		text = "我以为只有我想到了这一点，但他的主体一直在那里."
+		ServerChat(RedX_pref + text, 25);
+
+		text = "你说的重生之角是什么?"
+		ServerChat(Tifa_pref + text, 30);
+
+		text = "你很快就会知道了"
+		ServerChat(RedX_pref + text, 35);
+	}
+
+	EntFire("Map_TD", "AddOutput", "angles 0 180 0", 10);
+	EntFire("Map_TD", "AddOutput", "origin -5774 -3668 1889", 10);
+
+	EntFire("Hold5_Door", "Open", "", 25);
+	EntFire("Ebaniy_Haryde*", "kill", "", 0);
+}
+
+function Trigger_Cave_Second()
+{
+	local text;
+
+	text = "小道的大门将在15秒后打开"
+	ServerChat(Chat_pref + text);
+	EntFire("cmd","Command","say 小道的大门将在15秒后打开", 0);
+
+	text = "还剩5秒"
+	ServerChat(Chat_pref + text, 10);
+
+	text = "撤退"
+	ServerChat(Chat_pref + text, 15);
+
+	EntFire("Hold5_Door1", "Open", "", 15);
+
+	EntFire("explosion", "RunScriptCode", "CreateExplosion(Vector(-5111,-1827,1922),228,100)", 29.99);
+	EntFire("cave_skip", "Break", "", 30);
+	EntFire("explosion", "RunScriptCode", "CreateExplosion(Vector(-4450,-1515,566),228,100)", 29.96);
+	EntFire("Skip_Wall", "Toggle", "", 30); //выкл
+
+	EntFire("Map_TD", "AddOutput", "origin -6414 -2240 2036", 0);
+	EntFire("Map_TP_3", "Enable", "", 0.5);
+	EntFire("Temp_OldMine", "ForceSpawn", "", 15);
+	EntFire("Cave_Fire", "StartFire", "", 16);
+	if (Stage == 5)
+	{
+		EntFire("Hard_Mine_Door_Down", "Close", "", 19);
+		EntFire("Hard_Mine_Door_Up", "Close", "", 19);
+		EntFire("Inferno_Mine_Door_Down", "Close", "", 0);
+		EntFire("Inferno_Mine_Door_Up", "Close", "", 0);
+		EntFire("Hold5_Door", "Open", "", 0);
+		EntFire("Map_TP_Mine_1", "Enable", "", 20);
+		EntFire("Map_TP_Mine_2", "Enable", "", 20);
+	}
+
+	//EntFireByHandle(self, "RunScriptCode", "Bhop_Toggle(true, true);", 17, null, null);
+}
+
+function Trigger_Hard_Mine() //вход на 2 лвле
+{
+	local text;
+
+	text = "大门将在15秒后打开"
+	ServerChat(Chat_pref + text);
+	EntFire("cmd","Command","say 大门将在15秒后打开", 0);
+
+	text = "还剩5秒"
+	ServerChat(Chat_pref + text, 10);
+
+	text = "撤退"
+	ServerChat(Chat_pref + text, 15);
+
+	EntFire("Hard_Mine_Door_Down", "Open", "", 15);
+	EntFire("Hard_Mine_Door_Up", "Open", "", 15);
+	EntFire("Mine_Door2_Button", "Unlock", "", 0);
+
+	EntFire("Map_TD", "AddOutput", "origin -6414 -2240 2036", 0);
+	EntFire("Map_TP_3", "Enable", "", 0.5);
+
+	EntFire("music01", "RunScriptCode", "SetMusic(Music_Hard_2);", 14.0);
+}
+
+function Mine_Door2()
+{
+	if (Stage ==2)
+	{
+		local text;
+
+		text = "大门将在15秒后打开"
+		ServerChat(Chat_pref + text, 0);
+		EntFire("cmd","Command","say 大门将在15秒后打开", 0);
+
+		EntFire("Mine_Door2_1", "Open", "", 15);
+		EntFire("Mine_Door2_2", "Open", "", 15);
+		EntFire("Mine_Door1", "Open", "", 18);
+		EntFire("Mine_Door3_Button", "Unlock", "", 0);
+		EntFire("Map_TP_Mine_2", "Enable", "", 18); //Вкл телепорта
+		EntFire("Map_TP_Mine_2", "Disable", "", 20); //Выкл телепорта
+		EntFire("Hard_Mine_Door_Down", "Close", "", 18);
+		EntFire("Hard_Mine_Door_Up", "Close", "", 18);
+		EntFire("Map_TP_4", "Enable", "", 18);
+		EntFire("Map_TD", "AddOutput", "origin -5538 90 1861", 18);
+		EntFire("Map_TD", "AddOutput", "angles 0 90 0", 18);
+
+	}
+	//Mine_Door2_2 1ая открывется 15
+	//Mine_Door1
+}
+
+function Mine_Door3()
+{
+	//Mine_Door3
+	if(Stage == 2)
+	{
+		local text;
+
+		text = "大门将在25秒后打开"
+		ServerChat(Chat_pref + text, 0);
+		EntFire("cmd","Command","say 大门将在25秒后打开", 0);
+		
+		text = "还剩5秒"
+		ServerChat(Chat_pref + text, 20);
+
+		text = "撤退"
+		ServerChat(Chat_pref + text, 25);								   
+
+		text = "保持防守僵尸直到门开始关闭"
+		ServerChat(Chat_pref + text, 25);
+		EntFire("cmd","Command","say 保持防守僵尸直到门开始关闭---8", 25);
+
+		EntFire("Temp_Scorpion", "ForceSpawn", "", 0);
+		EntFire("Mine_Vent_Break_2", "Break", "", 0);
+		EntFire("Mine_Door3", "Close", "", 33);
+		EntFire("Mine_Door3", "Open", "", 25);
+		EntFire("Mine_Side_Door_Down", "kill", "", 0);
+		EntFire("Mine_Side_Door_Up", "kill", "", 0);
+
+
+		EntFire("Credits_Game_Text", "AddOutput", "message 巨蝎", 35);
+		EntFire("Temp_Scorpion", "RunScriptCode", "Camera();", 36);
+		EntFire("music01", "RunScriptCode", "GetMusicBossFight();", 36);
+		EntFire("Credits_Game_Text", "Display", "", 37);
+		EntFire("Camera_old", "RunScriptCode", "SetOverLay(Overlay)", 36);
+		EntFire("Map_TD", "AddOutput", "origin -5872 2300 2104", 39.5);
+		//EntFire("Map_TP_4", "Enable", "", 40);  //перенес включение выше
+		EntFire("Map_TP_Mine_1", "Enable", "", 40);
+		EntFire("Camera_old", "RunScriptCode", "SetOverLay()", 41.5);
+		EntFire("Temp_Scorpion", "RunScriptCode", "Start();", 43);
+	}
+	if(Stage == 5)
+	{
+		local text;
+
+		text = "大门将在20秒后打开"
+		ServerChat(Chat_pref + text, 0);
+		EntFire("cmd","Command","say 大门将在20秒后打开", 0);
+		
+		text = "还剩5秒"
+		ServerChat(Chat_pref + text, 15);
+
+		text = "撤退"
+		ServerChat(Chat_pref + text, 20);
+		
+		EntFire("Mine_Side_Door_Down", "open", "", 0);
+		EntFire("Mine_Side_Door_Up", "open", "", 0);
+		EntFire("Mine_Vent_Break", "Break", "", 10);
+		EntFire("Mine_Vent_Break_2", "Break", "", 10);
+		EntFire("Mine_Door3", "Open", "", 20);
+		EntFire("Mine_Door1", "Open", "", 20);
+		EntFire("Mine_Door5*", "Open", "", 31);
+
+		EntFire("Map_TD", "AddOutput", "origin -6142 732 1868", 39.5);
+		EntFire("Map_TD", "AddOutput", "angles 0 0 0", 39.5);
+//		EntFire("Map_TP_Mine_2", "Enable", "", 40);
+
+		//25+после через 10 сек ломаются венты +после открытия правые
+							//дверио ткроются через 5 сек
+							//след воротавсе октрыты
+	}
+}
+
+function Mine_Door6() //выход 2 лвл
+{
+	if (Stage == 2)
+	{
+	local text;
+
+	text = "最后的大门将在35秒后打开"
+	ServerChat(Chat_pref + text, 0);
+	EntFire("cmd","Command","say 最后的大门将在35秒后打开", 0);
+
+	text = "最后的大门将在10秒后打开"
+	ServerChat(Chat_pref + text, 25);
+
+	EntFire("Hard_End", "Enable", "", 0);
+	EntFire("Map_Shake_7_Sec", "StartShake", "", 0);
+	EntFire("Map_Shake_7_Sec", "StartShake", "", 8);
+	EntFire("Hold4_Clip", "Toggle", "", 10);
+	EntFire("Map_TP_3", "Disable", "", 10);
+	EntFire("Map_Shake_7_Sec", "StartShake", "", 15);
+	EntFire("Mine_Door1", "Close", "", 20);
+	EntFire("Mine_Door2_1", "Close", "", 20);
+	EntFire("Mine_Door2_2", "Close", "", 20);
+	EntFire("Hold5_Door", "Close", "", 20);
+//	EntFire("Mine_Door3", "Open", "", 20);
+//	EntFire("Mine_Door5_1", "Open", "", 25);
+//	EntFire("Mine_Door5_2", "Open", "", 25);
+	EntFire("Mine_Vent_Break", "Break", "", 25);
+	EntFire("Inferno_Mine_Door_Down", "Open", "", 35);
+	EntFire("Inferno_Mine_Door_Up", "Open", "", 35);
+	EntFire("Map_TP_3", "Disable", "", 35);
+	EntFire("Hard_End", "Enable", "", 35);
+	EntFire("Map_TP_4", "Disable", "", 35);
+
+	EntFire("Map_TD", "AddOutput", "angles 0 -90 0", 50);
+	EntFire("Map_TD", "AddOutput", "origin -6800 -106 1888", 50);
+	EntFire("Map_TP_Mine_2", "Enable", "", 51);
+	EntFire("Map_TP_Mine_1", "Enable", "", 51);
+	}
+}
+
+function Trigger_Inferno_Mine() //вход на 4 лвле
+{
+	local text;
+
+	text = "大门将在20秒后打开"
+	ServerChat(Chat_pref + text);
+	EntFire("cmd","Command","say 大门将在20秒后打开", 0);
+
+	text = "还剩5秒"
+	ServerChat(Chat_pref + text, 15);
+
+	text = "撤退"
+	ServerChat(Chat_pref + text, 20);
+
+	EntFire("Inferno_Mine_Door_Down", "Open", "", 20);
+	EntFire("Inferno_Mine_Door_Up", "open", "", 20);
+
+	EntFire("Map_TD", "AddOutput", "angles 0 180 0", 10);
+	// EntFire("Map_TD", "AddOutput", "origin -5774 -3668 1889", 10);
+
+	EntFire("temp_mine", "forcespawn", "", 0);
+	EntFire("Mine_Door4_Trigger", "Enable", "", 10);
+	EntFire("Mine_Door7_Button", "Unlock", "", 10);
+
+	EntFire("Map_TD", "AddOutput", "origin -6414 -2240 2036", 10.5);
+	EntFire("Map_TP_3", "Enable", "", 11);
+
+	//25
+	//Inferno_Mine_Door_Down
+}
+
+function DisabledOldParticles()
+{
+	local particle = Entities.CreateByClassname("prop_physics");
+	particle.SetModel("models/props_junk/glassbottle01a.mdl");
+	particle.SetOrigin(Vector(7777, -2821, -438));
+	particle.__KeyValueFromString("rendermode","1");
+	particle.__KeyValueFromString("rendercolor","255 0 255");
+}
+
+function Mine_Door4() //большие ворота
+{
+	local text;
+	//Mine_Door3
+	if(Stage == 2)
+	{
+		text = "门很快就会打开。等等…"
+		ServerChat(Chat_pref + text, 0);
+		EntFire("cmd","Command","say 门很快就会打开。等等…---5", 0);
+
+		EntFire("Mine_Door4", "Open", "", 5);
+		EntFire("Mine_Door6_Button", "Unlock", "", 0);
+		EntFire("Map_TP_Mine_1", "Disable", "", 40);
+		EntFire("Mine_Door4_Ladder", "Open", "", 10);
+		EntFire("music01", "RunScriptCode", "SetMusic(Music_Hard_4);", 0);
+	}
+	if(Stage == 5)
+	{
+		text = "大门将在15秒后打开"
+		ServerChat(Chat_pref + text);
+		EntFire("cmd","Command","say 大门将在15秒后打开", 0);
+
+		text = "还剩5秒"
+		ServerChat(Chat_pref + text, 10);
+
+		text = "撤退"
+		ServerChat(Chat_pref + text, 15);
+
+		EntFire("Mine_Door4", "Open", "", 15);
+		EntFire("Mine_Door4_Ladder", "Open", "", 17);
+	}
+}
+
+function Mine_Door7() //выход на 4 лвл
+{
+	local text;
+	if (Stage == 5)
+	{
+		text = "大门将在10秒后打开"
+		ServerChat(Chat_pref + text);
+		EntFire("cmd","Command","say 大门将在10秒后打开", 0);
+
+		text = "还剩5秒"
+		ServerChat(Chat_pref + text, 5);
+
+		text = "撤退"
+		ServerChat(Chat_pref + text, 10);
+		
+		EntFire("Hard_Mine_Door_Down", "Open", "", 10);
+		EntFire("Hard_Mine_Door_Up", "Open", "", 10);
+	}
+	//15
+	//Hard_Mine_Door_Down
+}
+
+function Bhop_Toggle(value = false, show = false)
+{
+	if(!BHOP_ENABLE)
+		return;
+
+	SendToConsoleServerPS("sv_enablebunnyhopping " + ((value) ? "1" : "0"));
+	if(show)
+	{
+		local text;
+
+		text = "不限速连跳" + ((value) ? "\x04 启用" : "\x02 关闭");
+		ServerChat(Chat_pref + text);
+	}
+}
+
+function Trigger_Cave_Third()
+{
+	local text;
+
+	text = "防守直到有什么事发生"
+	ServerChat(Chat_pref + text);
+	EntFire("cmd","Command","say 防守直到有什么事发生---15", 0);
+
+	EntFire("Hold6_Move", "Open", "", 15);
+
+	//EntFire("map_tone", "SetBloomScale", "5", 0);
+	//EntFire("map_tone", "SetAutoExposureMax", "2.5", 0);
+	//EntFire("map_tone", "SetAutoExposureMin", "0.9", 0);
+
+	if(Stage == 4 || Stage == 5)
+	{
+		EntFire("explosion", "RunScriptCode", "CreateExplosion(Vector(-2646,-704,432),228,100)", 18);
+		EntFire("Hold6_Rock1", "Disable", "", 18.51);
+		EntFire("Hold6_Rock1_wall", "Toggle", "", 18.51);
+
+		EntFire("explosion", "RunScriptCode", "CreateExplosion(Vector(-3157,753,553),228,100)", 22);
+		EntFire("Hold6_Rock", "Disable", "", 22.01);
+		EntFire("Hold6_Rock_wall", "Toggle", "", 22.01);
+	}
+	else
+	{
+		EntFire("Hold7_Rock", "Kill", "", 0);
+	}
+	if(Stage == 4)
+	{
+		EntFire("Temp_Extreme", "ForceSpawn", "", 15);
+	}
+
+	if(Stage == 4 || Stage == 5)
+	{
+		EntFire("explosion", "RunScriptCode", "CreateExplosion(Vector(-1169,300,373),228,100)", 20);
+		EntFire("lvl3_Wall", "Kill", "", 20.01);
+	}
+
+	EntFire("Gi_Cave_TP", "Kill", "", 0);
+
+	EntFire("Map_TD", "AddOutput", "angles 0 90 0", 25);
+	EntFire("Map_TD", "AddOutput", "origin -3810 -144 356", 25);
+	EntFire("Map_TP_4", "Enable", "", 26);
+}
+
+function Trigger_Cave_Last()
+{
+	local text;
+	local timer = 0;
+	if(Stage != 1)
+	{
+		timer = 5;
+	}
+
+	text = "基族洞穴的大门将在 " + (25 + timer) + " 秒后打开"
+	ServerChat(Chat_pref + text);
+	EntFire("cmd","Command","say 基族洞穴的大门将在" + (25 + timer) + "秒后打开", 0);
+
+	text = "还剩5秒"
+	ServerChat(Chat_pref + text, 20 + timer);
+
+	text = "撤退"
+	ServerChat(Chat_pref + text, 25 + timer);
+
+	EntFire("Boss_Dicks_Move", "Open", "", 0);
+	EntFire("Hold7_Break_Anim", "FireUser1", "", 20 + timer);
+
+	EntFire("Hold5_Door1", "Close", "", 25 + timer);
+	EntFire("Hold5_Door", "Close", "", 25 + timer);
+
+	EntFire("Hold7_Break", "Break", "", 25 + timer);
+
+	EntFire("Map_TD", "AddOutput", "angles 5 -84 0", 5);
+	EntFire("Map_TD", "AddOutput", "origin -2934 696 575", 5);
+	if(Stage == 5)
+	{
+		EntFire("Boss_Rock", "kill", "", 5);
+	}
+}
+
+function Trigger_Cave_Boss_Start()
+{
+	if(Stage == 1)
+	{
+		local text;
+		text = "那是真的鬼魂吗?"
+		ServerChat(Tifa_pref + text, 20);
+
+		text = "嗯，我们只装备了它的顶部。下面是禁区."
+		ServerChat(RedX_pref + text, 22);
+
+		text = "是时候开始热身了."
+		ServerChat(Tifa_pref + text, 24);
+	}
+	// else if(Stage == 2)
+	// {
+	// 	local text;
+	// 	text = "This time, you won't get away."
+	// 	ServerChat(RedX_pref + text, 20);
+	// }
+	if(Stage == 1 || Stage == 4)
+	{
+		EntFire("Temp_Gi_Nattak", "ForceSpawn", "", 5);
+		EntFire("Temp_Gi_Nattak", "RunScriptCode", "Init();", 5.01);
+	}
+	if(Stage == 5)
+	{
+		EntFire("Temp_AirBuster", "ForceSpawn", "", 4.9);
+		EntFire("Temp_AirBuster", "RunScriptCode", "PreStart()", 5);
+	}
+}
+
+function Trigger_Cave_After_Boss()
+{
+	local text;
+
+	text = "你们现在可以离开基族洞穴了"
+	ServerChat(Chat_pref + text, 6.5);
+
+	EntFire("Map_Shake", "StartShake", "", 0);
+	EntFire("Map_Shake_7_Sec", "StartShake", "", 12);
+
+	EntFire("Boss_Cage", "Kill", "", 6.5);
+	EntFire("Boss_ZM_Dicks_Move", "Open", "", 5);
+
+	EntFire("Boss_Cage", "Toggle", "", 5);
+	EntFire("Boss_After_v1", "Enable", "", 0);
+
+	EntFire("Skip_Wall", "Toggle", "", 0);
+
+	if(Stage == 1)
+	{
+		text = "我们赢了，真的吗?"
+		ServerChat(Tifa_pref + text, 5);
+
+		text = "我想他消失了。但我不确定我对此的感觉."
+		ServerChat(RedX_pref + text, 8);
+
+		text = "那我们赶紧去天文台吧"
+		ServerChat(Tifa_pref + text, 11);
+
+		EntFire("Normal_Crates_End", "Enable", "", 25);
+		EntFire("Normal_End_Wall", "Toggle", "", 25);
+		EntFire("s1_Ladder_Model", "Kill", "", 25);
+		EntFire("s1_Ladder", "Kill", "", 25);
+
+		EntFire("Nigger", "AddOutPut", "origin -4634 -2544 1970", 0);
+		EntFire("Nigger", "AddOutPut", "angles -90 346 0", 0)
+		EntFire("Nigger", "SetAnimation", "idle", 0);
+		EntFire("Nigger", "SetDefaultAnimation", "idle", 0);
+	}
+
+	else if(Stage == 4)
+	{
+		text = "太好了，现在我们需要离开洞穴，到达他的本体."
+		ServerChat(RedX_pref + text, 5);
+
+		text = "你觉得最后一战怎么样？你认为我们能赢吗?"
+		ServerChat(Tifa_pref + text, 8);
+
+		text = "我对此表示怀疑。他在用一切力量制造幻象。我想我们需要尽快击败他"
+		ServerChat(RedX_pref + text, 11);
+
+		EntFire("Hold_End_Button", "UnLock", "", 0);//?
+
+		EntFire("Hold6_Rock", "Enable", "", 0);
+		EntFire("Hold6_Rock_wall", "Toggle", "", 0);
+
+		EntFire("Hold6_Rock1", "Enable", "", 0);
+		EntFire("Hold6_Rock1_wall", "Toggle", "", 0);
+
+		EntFire("Hold_End_Ladder_Model", "Enable", "", 0);
+		EntFire("Hold_End_Ladder_Wall", "Toggle", "", 0);
+	}
+
+	else if(Stage == 5)
+	{
+		EntFire("Hold_End_Button", "UnLock", "", 0);//?
+
+		EntFire("Hold6_Rock", "Enable", "", 0);
+		EntFire("Hold6_Rock_wall", "Toggle", "", 0);
+
+		EntFire("Hold6_Rock1", "Enable", "", 0);
+		EntFire("Hold6_Rock1_wall", "Toggle", "", 0);
+
+		EntFire("Hold_End_Ladder_Model", "Enable", "", 0);
+		EntFire("Hold_End_Ladder_Wall", "Toggle", "", 0);
+	}
+
+	EntFire("Trigger_Kill_Boss_Huynya", "Enable", "", 0);
+	EntFire("Trigger_Kill_ZM_Cage", "Enable", "", 0);
+	EntFire("Normal_End_Trigger", "Enable", "", 0);
+
+	EntFire("Hold6_Move", "Close", "", 0);
+
+	EntFire("Boss_Dicks_Move", "Open", "", 0);
+
+	EntFire("Map_TP_5", "Disable", "", 0);
+	EntFire("Map_TP_4", "Disable", "", 0);
+
+	EntFire("music01", "RunScriptCode", "GetMusicAfterBoss();", 0.00);
+}
+function Trigger_After_Boss_Skip_First()
+{
+	local time;
+	switch (Stage)
+	{
+		case 1:
+		time = 10;
+		break;
+		case 2:
+		time = 7;
+		break;
+		case 4:
+		time = 5;
+		break;
+		case 5:
+		time = 2;
+		break;
+	}
+	EntFire("explosion", "RunScriptCode", "CreateExplosion(Vector(643,5346,637),228,100)", time);
+	EntFire("Boss_After_v1_Skip", "kill", "", time + 0.01);
+
+	EntFire("Boss_After_v2", "Enable", "", 0);
+}
+
+function Trigger_After_Boss_Skip_Second()
+{
+	local time;
+	local time1;
+	switch (Stage)
+	{
+		case 1:
+		time = 7;
+		time1 = 0;
+		break;
+		case 2:
+		time = 5;
+		time1 = 4;
+		break;
+		case 4:
+		time = 3;
+		time1 = 8;
+		break;
+		case 5:
+		time = 0;
+		time1 = 12;
+		break;
+	}
+
+	if(Stage == 5)
+	{
+		EntFire("explosion", "RunScriptCode", "CreateExplosion(Vector(-1704,2520,244),156,100)", 3);
+		EntFire("explosion", "RunScriptCode", "CreateExplosion(Vector(-2248,2520,256),156,100)", 5);
+		EntFire("explosion", "RunScriptCode", "CreateExplosion(Vector(-2600,1720,432),156,100)", 8);
+		EntFire("explosion", "RunScriptCode", "CreateExplosion(Vector(-1832,1536,413),156,100)", 11);
+		EntFire("explosion", "RunScriptCode", "CreateExplosion(Vector(-2110,535,262),156,100)", 14);
+	}
+
+	if (Stage > 3)
+	{
+		//EntFire("map_tone", "SetBloomScale", "4", 30 + time1);
+		//EntFire("map_tone", "SetAutoExposureMax", "3.5", 30 + time1);
+		//EntFire("map_tone", "SetAutoExposureMin", "0.9", 30 + time1);
+	}
+	else
+	{
+		//EntFire("map_tone", "SetBloomScale", "2", 30 + time1);
+		//EntFire("map_tone", "SetAutoExposureMax", "2.5", 30 + time1);
+		//EntFire("map_tone", "SetAutoExposureMin", "0.9", 30 + time1);
+	}
+
+	EntFire("Map_TD", "AddOutput", "angles 7 -145 0", 15);
+	EntFire("Map_TD", "AddOutput", "origin -950 3297 469", 15);
+
+	EntFire("explosion", "RunScriptCode", "CreateExplosion(Vector(-3456,3737,453),228,100)", time);
+	EntFire("Boss_Side_Model", "Kill", "", time + 0.01);
+	EntFire("Boss_Side_Wall", "Kill", "", time + 0.01);
+
+	if(Stage == 1)
+	{
+		EntFire("explosion", "RunScriptCode", "CreateExplosion(Vector(-4450,-1515,566),228,100)", (30 - 0.05) + time1);
+		EntFire("Skip_Wall", "Toggle", "", 30 + time1);  //выкл
+
+		EntFire("explosion", "RunScriptCode", "CreateExplosion(Vector(-2423,-693,333),228,100)", 36 + time1);
+		EntFire("Hold6_Rock1", "Disable", "", 36.01 + time1);
+		EntFire("Hold6_Rock1_wall", "Toggle", "", 36.01 + time1);
+	}
+	else
+	{
+		EntFire("explosion", "RunScriptCode", "CreateExplosion(Vector(-2423,-693,333),228,100)", 31 + time1);
+		EntFire("Hold6_Rock1", "Disable", "", 31.01 + time1);
+		EntFire("Hold6_Rock1_wall", "Toggle", "", 31.01 + time1);
+	}
+
+	EntFire("Hold6_Move", "Open", "", 25 + time1);
+	EntFire("cmd","Command","say 通往上层的门将在"+(25+time1).tostring()+"秒后打开", 0);
+
+	EntFire("explosion", "RunScriptCode", "CreateExplosion(Vector(-3120,958,525),228,100)", 35.5 + time1);
+	EntFire("Hold6_Rock", "Disable", "", 32.51 + time1);
+	EntFire("Hold6_Rock_wall", "Toggle", "", 32.51 + time1);
+}
+
+
+
+//Normal
+{
+	function Trigger_Normal_End_Pre()
+	{
+		local text;
+
+		text = "天文台的大门将在20秒后打开"
+		ServerChat(Chat_pref + text);
+		EntFire("cmd","Command","say 天文台的大门将在20秒后打开", 0);
+
+		text = "还剩5秒"
+		ServerChat(Chat_pref + text, 15);
+
+		text = "撤退"
+		ServerChat(Chat_pref + text, 20);
+
+		EntFire("Lab_Wall_door", "Open", "", 20);
+		EntFire("Normal_end_door", "Open", "", 30);
+
+		EntFire("Map_TD", "AddOutput", "angles 0 180 0", 0);
+		EntFire("Map_TD", "AddOutput", "origin -3200 256 340", 0);
+		EntFire("Map_TP_6", "Enable", "", 1);
+
+		EntFire("Normal_End", "Enable", "", 0);
+	}
+
+	function Trigger_Normal_End()
+	{
+		local text;
+		text = "这是你最后的防守点"
+		ServerChat(Chat_pref + text);
+		EntFire("cmd","Command","say 这是你最后的防守点---15", 0);
+
+		text = "恭喜你! 你做到了. . 但是看起来基纳塔克不知怎么跑掉了. . 我们下次会打败他的..。"
+		ServerChat(Chat_pref + text, 4);
+
+		text = "他好像又出现了，我以为你父亲以前击败他了!"
+		ServerChat(OldMan_pref + text, 7);
+
+		text = "我们都错了!"
+		ServerChat(OldMan_pref + text, 10);
+
+		text = "这次我要一劳永逸地完成这项工作"
+		ServerChat(RedX_pref + text, 13);
+
+		EntFire("Normal_end_door", "Close", "", 15);
+		EntFire("Normal_End", "RunScriptCode", "Start(21,7);", 0.01);
+	}
+	function Trigger_Normal_Win()
+	{
+		local text;
+
+		text = "正常模式已通关.解锁困难模式"
+		ServerChat(Chat_pref + text);
+
+		Winner_array = caller.GetScriptScope().GetWinner();
+
+		Stage_Beat_Normal_Time = Time();
+		
+		SetStage(2);
+	}
+
+	function Trigger_Normal_Lose()
+	{
+		local text;
+
+		text = "不错的尝试，失败者"
+		ServerChat(Chat_pref + text);
+	}
+}
+
+function Show_Credits_Passed()
+{
+	local text;
+	text = "任务通过"
+	text = text.toupper();
+	ShowCreditsText(text);
+}
+
+function Show_Credits_Failed()
+{
+	local text;
+	text = "任务失败"
+	text = text.toupper();
+	ShowCreditsText(text);
+}
+
+function Trigger_Hold_End()
+{
+	local text;
+
+	text = "大门将在10秒后打开"
+	ServerChat(Chat_pref + text);
+	EntFire("cmd","Command","say 大门将在10秒后打开", 0);
+
+	EntFire("explosion", "RunScriptCode", "CreateExplosion(Vector(-4450,-1515,566),228,100)", 10 - 0.01);
+	EntFire("Skip_Wall", "Toggle", "", 10); //выкл
+
+	EntFire("Final_Rope_Temp", "ForceSpawn", "", 10);
+
+	EntFire("Hold5_Door1", "Open", "", 10);
+
+	if(Stage == 4)
+	{
+		text = "最后的大门将在25秒后打开"
+		ServerChat(Chat_pref + text, 10);
+		EntFire("cmd","Command","say 最后的大门将在25秒后打开", 10);
+
+		EntFire("Hold5_Door", "Open", "", 35);
+		Bridge(37);
+
+		EntFire("New_ending_wall", "Kill", "", 37);
+		EntFire("explosion", "RunScriptCode", "CreateExplosion(Vector(-521,-957,2053),228,100)", 36.99);
+
+		EntFire("Temp_End", "ForceSpawn", "", 5);
+		EntFire("End_Fire", "StartFire", "", 5.1);
+		EntFire("End_Fire", "Start", "", 10);
+
+		EntFire("Extreme_Reno_Model", "Enable", "", 35);
+		EntFire("Extreme_Reno_Model", "FireUser2", "", 36);
+		EntFire("Extreme_Reno_Model", "RunScriptCode", "PlaySound(Sound_First);", 39);
+
+		EntFire("Map_Shake_7_Sec", "StartShake", "", 0);
+		EntFire("Map_Shake_7_Sec", "StartShake", "", 16);
+		EntFire("Map_Shake_7_Sec", "StartShake", "", 23);
+
+		text = "该死，这可真不容易."
+		ServerChat(Tifa_pref + text, 35);
+
+		text = "我担心的是他看起来不一样了."
+		ServerChat(RedX_pref + text, 37);
+	}
+	if(Stage == 5)
+	{
+		text = "最后的大门将在35秒后打开"
+		ServerChat(Chat_pref + text, 10);
+		EntFire("cmd","Command","say 最后的大门将在35秒后打开", 10);
+
+		EntFire("Temp_End", "ForceSpawn", "", 0);
+		EntFire("End_Fire", "Start", "", 10);
+
+		EntFire("Hold5_Door", "Open", "", 45);
+		Bridge(47);
+		EntFire("Map_Shake_7_Sec", "StartShake", "", 0);
+		EntFire("Map_Shake_7_Sec", "StartShake", "", 20.5);
+		EntFire("Map_Shake_7_Sec", "StartShake", "", 38);
+		EntFire("New_ending_wall", "kill", "", 38);
+
+		EntFire("New_ending_wall", "Kill", "", 47);
+		EntFire("explosion", "RunScriptCode", "CreateExplosion(Vector(-521,-957,2053),228,100)", 46.99);
+
+
+    	EntFire("Temp_Reno", "ForceSpawn", "", 0);
+
+		EntFire("explosion", "RunScriptCode", "CreateExplosion(Vector(-4945,-1342,1826),156,100)", 2);
+		EntFire("explosion", "RunScriptCode", "CreateExplosion(Vector(-4768,-833,1828),156,100)", 6);
+		EntFire("explosion", "RunScriptCode", "CreateExplosion(Vector(-5272,-1277,1847),156,100)", 12);
+		EntFire("explosion", "RunScriptCode", "CreateExplosion(Vector(-5579,-701,1842),156,100)", 14);
+		EntFire("explosion", "RunScriptCode", "CreateExplosion(Vector(-5744,-1744,1833),156,100)", 16);
+		EntFire("explosion", "RunScriptCode", "CreateExplosion(Vector(-5399,-1837,1832),156,100)", 18);
+		EntFire("explosion", "RunScriptCode", "CreateExplosion(Vector(-5936,-1248,1895),156,100)", 40);
+		EntFire("explosion", "RunScriptCode", "CreateExplosion(Vector(-6084,-889,1831),156,100)", 43);
+
+		EntFire("explosion", "RunScriptCode", "CreateExplosion(Vector(-6920,-530,1833),356,220)", 37 + 10);
+
+
+		EntFire("explosion", "RunScriptCode", "CreateExplosion(Vector(-7482,-1057,1815),156,100)", 39 + 10);
+		EntFire("explosion", "RunScriptCode", "CreateExplosion(Vector(-7904,-808,1815),156,100)", 41 + 10);
+		EntFire("explosion", "RunScriptCode", "CreateExplosion(Vector(-8193,-1071,1815),156,100)", 43 + 10);
+		EntFire("explosion", "RunScriptCode", "CreateExplosion(Vector(-8387,-825,1815),156,100)", 45 + 10);
+		EntFire("explosion", "RunScriptCode", "CreateExplosion(Vector(-8956,-1069,1815),156,100)", 47 + 10);
+		EntFire("explosion", "RunScriptCode", "CreateExplosion(Vector(-9198,-789,1815),156,100)", 49 + 10);
+		EntFire("explosion", "RunScriptCode", "CreateExplosion(Vector(-9651,-1080,1815),156,100)", 51 + 10);
+		EntFire("explosion", "RunScriptCode", "CreateExplosion(Vector(-9880,-793,1815),156,100)", 53 + 10);
+	}
+
+	EntFire("Hold6_Move", "Close", "", 10);
+
+	EntFire("Map_TP_6", "Enable", "", 10);
+	EntFire("Map_TD", "AddOutput", "origin -3200 256 340", 5);
+	EntFire("Map_TD", "AddOutput", "angles 0 180 0", 5);
+}
+//Hard
+{
+	function Trigger_Hard_End()
+	{
+		local text;
+
+		text = "这是你最后的防守点"
+		ServerChat(Chat_pref + text);
+		EntFire("cmd","Command","say 仙人掌将在25秒后出现", 0);
+
+		EntFire("Hard_End", "RunScriptCode", "Start(40,7);", 0.01);
+
+		EntFire("Map_TP_7", "Enable", "", 20);
+		EntFire("Map_TD", "AddOutput", "origin -7045 -1011 1933", 19);
+		EntFire("Map_TD", "AddOutput", "angles -5 -100 0", 19);
+
+		text = "我们很幸运."
+		ServerChat(Tifa_pref + text, 24.5);
+
+		text = "快一点，在仙人掌找到我们之前杀了它"
+		ServerChat(RedX_pref + text, 26);
+
+		EntFire("temp_cactus", "forcespawn", "", 24);
+		EntFire("temp_cactus", "runscriptcode", "Init()", 25);
+		Bridge(39);
+	}
+
+	function Bridge(time)
+	{
+		EntFire("Bridge_*", "kill", "", 0 + time);
+		EntFire("explosion", "RunScriptCode", "CreateExplosion(Vector(-6860,-2210,1862),256,100)",0 + time);  //мост
+		EntFire("explosion", "RunScriptCode", "CreateExplosion(Vector(-6860,-1860,1862),256,100)",0.01 + time);  //мост
+		EntFire("explosion", "RunScriptCode", "CreateExplosion(Vector(-6860,-2916,1862),256,100)",0.02 + time);  //мост
+		EntFire("explosion", "RunScriptCode", "CreateExplosion(Vector(-6338,-2824,1790),156,100)",0.05 + time);  //скала у стены
+		EntFire("explosion", "RunScriptCode", "CreateExplosion(Vector(-6320,-2636,1890),156,100)",0.1 + time);  //скала у стены
+		EntFire("explosion", "RunScriptCode", "CreateExplosion(Vector(-7425,-3403,1758),256,100)",0.15 + time);  //скала у стены
+
+	}
+	function Trigger_Hard_Win()
+	{
+		local text;
+
+		text = "困难模式已通关.解锁ZM模式"
+		ServerChat(Chat_pref + text);
+
+		Winner_array = caller.GetScriptScope().GetWinner();
+		Stage_Beat_Hard_Time = Time();
+
+		SetStage(3);
+	}
+
+	function Trigger_Hard_Lose()
+	{
+		local text;
+
+		text = "不错的尝试，失败者"
+		ServerChat(Chat_pref + text);
+	}
+}
+//ZM
+{
+	function Trigger_ZM_Tp()
+	{
+		EntFire("Start_tp", "AddOutput", "OnStartTouch !activator:RunScriptCode:self.SetOrigin(Vector(2464,-3942,140));:0.01:-1", 0);
+		EntFire("ZM_TP_Shit", "Enable", "", 0.0);
+		local handle = null;
+		while((handle = Entities.FindByClassname(handle, "player")) != null)
+		{
+			if(handle == null)
+				continue;
+			if(!handle.IsValid())
+				continue;
+			if(handle.GetHealth() <= 0)
+				continue;
+			if(handle.GetTeam() != 3)
+			{
+				handle.SetOrigin(Vector(2464,-3942,140));
+				handle.SetVelocity(Vector(0,0,0));
+				continue;
+			}
+			handle.SetOrigin(Vector(2850,-3942,140));
+			handle.SetVelocity(Vector(0,0,0));
+		}
+
+	}
+
+	function Trigger_ZM_End()
+	{
+		local handle = null;
+		local alive = false;
+		while((handle = Entities.FindByClassname(handle, "player")) != null)
+		{
+			if(handle == null)
+				continue;
+			if(!handle.IsValid())
+				continue;
+			if(handle.GetHealth() <= 0)
+				continue;
+			if(handle.GetTeam() != 3)
+			{
+				handle.SetOrigin(Vector(-1827,-332,1106));
+				continue;
+			}
+
+			alive = true;
+			handle.SetOrigin(Vector(4680,-3563,899));
+			handle.SetVelocity(Vector(0,0,0));
+		}
+		local text;
+		if(!alive)
+		{
+			text = "不错的尝试，失败者"
+			ServerChat(Chat_pref + text);
+			return;
+		}
+		EntFire("zm_camera_nattack", "fireuser1", "", 0.01);
+
+		local text;
+		text = "这不可能...";
+		ServerChat(RedX_pref + text, 12.00);
+
+		text = "我以为我们已经摧毁了他";
+		ServerChat(Tifa_pref + text, 15.00);
+
+		text = "我的直觉是对的，一直以来，我们都在对抗幻象";
+		ServerChat(RedX_pref + text, 17.00);
+
+		text = "我们得向总部报告我们找到了目标";
+		ServerChat(ShinraSoldier_pref + text, 24.00);
+
+		text = "这次他们跑不掉了";
+		ServerChat(ShinraSoldier_pref + text, 33.00);
+	}
+		function Trigger_ZM_Lose()
+	{
+		local text;
+
+		text = "不错的尝试，失败者"
+		ServerChat(Chat_pref + text);
+		local handle = null;
+		while((handle = Entities.FindByClassname(handle, "player")) != null)
+		{
+			if(handle == null)
+				continue;
+			if(!handle.IsValid())
+				continue;
+			if(handle.GetHealth() <= 0)
+				continue;
+			else if(handle.GetTeam() == 3)
+			{
+				EntFireByHandle(handle, "SetHealth", "-1", 0.0, null, null);
+			}
+		}
+	}
+
+	function Trigger_ZM_End_Win()
+	{
+		local text;
+
+		text = "ZM模式已通关.解锁极限模式"
+		ServerChat(Chat_pref + text);
+
+		Winner_array.clear();
+		local handle = null;
+		while((handle = Entities.FindByClassname(handle, "player")) != null)
+		{
+			if(handle == null)
+				continue;
+			if(!handle.IsValid())
+				continue;
+			if(handle.GetHealth() <= 0)
+				continue;
+			if(handle.GetTeam() == 3)
+				Winner_array.push(handle);
+			else if(handle.GetTeam() == 2)
+			{
+				EntFireByHandle(handle, "SetDamageFilter", "", 0.9, null, null);
+				EntFireByHandle(handle, "SetHealth", "-1", 2.0, null, null);
+			}
+		}
+		local g_round = Entities.FindByName(null, "round_end");
+		EntFireByHandle(g_round, "EndRound_CounterTerroristsWin", "6", 1.8, null, null);
+
+		Show_Credits_Passed();
+
+		EntFire("music01", "RunScriptCode", "SetMusic(Sound_Win);", 0.00);
+		EntFire("Nuke_fade", "Fade", "", 0.00);
+		EntFire("zamok_ct", "RunScriptCode", "Stop()", 0);
+
+		Stage_Beat_ZM_Time = Time();
+		SetStage(4);
+	}
+}
+//EXTREME
+{
+	function Trigger_New_End()
+	{
+		EntFire("item_button_yuffi*", "RunScriptCode", "g_bBlockRope = true", 0.01);
+		if(Stage == 4)
+		{
+			EntFire("Map_TD", "AddOutput", "angles 0 180 0", 4);
+			EntFire("Map_TD", "AddOutput", "origin -6352 -1104 1876", 4);
+			EntFire("Map_TP_7", "Enable", "", 5);
+
+			EntFire("End_Move*", "Open", "", 1.5);
+
+			EntFire("Temp_Extreme", "RunScriptCode", "Init();", 0.01);
+
+			EntFire("Map_Shake", "StartShake", "", 0);
+			EntFire("Map_Shake", "StartShake", "", 3);
+
+			EntFire("Map_Shake", "StartShake", "", 40);
+			EntFire("End_Platform_Move", "FireUser1", "", 25);
+
+			// EntFire("End_End", "AddOutPut", "OnUser3 map_brush:RunScriptCode:Trigger_Extreme_Win();:0:1", 0);
+			// EntFire("End_End", "AddOutPut", "OnUser4 map_brush:RunScriptCode:Trigger_Extreme_Lose();:0:1", 0);
+		}
+		else if(Stage == 5)
+		{
+			EntFire("Temp_Reno", "RunScriptCode", "Start();", 0);
+			EntFire("Map_TD", "AddOutput", "angles 0 180 0", 5);
+			EntFire("Map_TD", "AddOutput", "origin -6352 -1104 1876", 5);
+			EntFire("Map_TP_7", "Enable", "", 8);
+		}
+	}
+}
+
+function Trigger_New_End_Last()
+{
+	if(Stage == 4)
+	{
+		EntFire("music01", "RunScriptCode", "SetMusic(Music_Extreme_4);", 6.00);
+
+		for(local i = 9, a = 0; i >= 4; i--, a += 0.2)
+		{
+			EntFire("music01", "Volume", "" + i, 10.0 + a);
+		}
+
+		if(ScoreBass > 0 && ScoreBass % 10 == 0)
+		{
+			EntFire("Extreme_Reno_Model", "RunScriptCode", "self.SetModel(CHICKEN_MODEL);", 8);
+			EntFire("Extreme_Reno_Model", "Skin", "4", 8.01);
+			EntFire("Extreme_Reno_Model", "SetAnimation", "Run01", 8.01);
+			EntFire("Extreme_Reno_Model", "AddOutPut", "ModelScale 3.5", 8);
+			EntFire("Extreme_Reno_Model", "AddOutPut", "angles 0 180 0", 8.05 );
+
+			EntFire("Extreme_Reno_Model", "SetAnimation", "Bunnyhop", 3.15 + 8);
+			EntFire("Extreme_Reno_Model", "SetAnimation", "Flap_falling", 3.3 + 8);
+			EntFire("Extreme_Reno_Model", "SetAnimation", "bounce", 5.9 + 8);
+			EntFire("Extreme_Reno_Model", "SetAnimation", "Walk01", 7.4 + 8);
+		}
+
+		EntFire("Camera_old", "RunScriptCode", "SetOverLay(Overlay)", 8);
+		EntFire("Camera_old", "RunScriptCode", "SpawnCameras(Vector(-8225,-982,1878),Vector(0,45,0),0,Vector(-8695,-982,1878),Vector(0,45,0),1,2.4)", 8);
+		EntFire("Camera_old", "RunScriptCode", "SpawnCameras(Vector(-10413,-928,1833),Vector(0,0,0),3,Vector(-10413,-928,1897),Vector(0,0,0),0,1)", 3.4 + 8);
+		EntFire("Camera_old", "RunScriptCode", "SpawnCameras(Vector(-10413,-928,1897),Vector(0,0,0),0,Vector(-10839,-928,1897),Vector(0,0,0),1,2.7)", 7.4 + 8);
+		EntFire("Camera_old", "RunScriptCode", "SetOverLay()", 11.1 + 8);
+
+		EntFire("End_Platform_Move", "FireUser1", "", 3);
+		EntFire("Extreme_Reno_Model", "FireUser3", "", 8);
+
+		EntFire("Map_TP_8", "Enable", "", 8);
+	}
+}
+
+function Trigger_Add_HP_New_End()
+{
+	if(Stage == 4)
+	{
+		EntFire("Temp_Extreme", "RunScriptCode", "AddHPInit(55)", 0);
+	}
+}
+
+function Trigger_After_Last_Nattak()
+{
+	if(Stage == 4)
+	{
+		local text;
+
+		text = "恭喜! 你做到了... 你杀了他..."
+		ServerChat(Chat_pref + text);
+
+		text = "去到岩石上防守";
+		ServerChat(Chat_pref + text, 2);
+
+		text = "这是你最后的防守点";
+		ServerChat(Chat_pref + text, 4);
+
+		EntFire("End_Clip", "Kill", "", 0);
+
+		EntFire("Map_TD", "AddOutput", "angles 0 180 0", 4);
+		EntFire("Map_TD", "AddOutput", "origin -8816 -928 2324", 4);
+		EntFire("Map_TP_4", "Enable", "", 5);
+	}
+}
+
+function Trigger_Win()
+	{
+		local text;
+		if (Stage == 4)
+		{
+			text = "极限模式已通关.解锁地狱模式"
+			ServerChat(Chat_pref + text);
+
+			Stage_Beat_Extreme_Time = Time();
+			
+//			SetStage(5);
+			
+		}
+		else
+		{
+			text = "地狱模式已通关. 感谢测试 Cosmo v6"
+			ServerChat(Chat_pref + text);
+			Stage_Beat_Inferno_Time = Time();									
+//			SetStage(3);
+
+//			EntFire("End_End", "RunScriptCode", "Start(4.0,0.0)", 0);
+		}
+		Winner_array = caller.GetScriptScope().GetWinner();
+	}
+
+	function Trigger_Lose()
+	{
+		local text;
+
+		text = "不错的尝试，失败者"
+		ServerChat(Chat_pref + text);
+	}
+
+function ShowCreditsText(text, delay = 0.00)
+{
+	if(CreditsText == null || CreditsText != null && !CreditsText.IsValid())
+	{
+		CreditsText = Entities.FindByName(null, "Credits_Game_Text");
+	}
+
+	if(CreditsText == null || CreditsText != null && !CreditsText.IsValid())
+		return;
+
+	EntFireByHandle(CreditsText, "SetText", text, delay, null, null);
+	EntFireByHandle(CreditsText, "Display", "", delay + 0.01, null, null);
+}
+
+function RotateSkin()
+{
+	local skin;
+	local ang;
+	skin = Entities.FindByName(null, "ct_skin");
+	if(skin != null)
+	{
+		ang = skin.GetAngles();
+		skin.SetAngles(ang.x, ang.y + 0.5, ang.z);
+	}
+	skin = Entities.FindByName(null, "t_skin");
+	if(skin != null)
+	{
+		ang = skin.GetAngles();
+		skin.SetAngles(ang.x, ang.y + 0.5, ang.z);
+	}
+	EntFireByHandle(self, "RunScriptCode", "RotateSkin()", 0.05, null, null);
+}
+
+function PlayerConnect()
+{
+	if(eventlist == null || eventlist != null && !eventlist.IsValid())
+	{
+		SendToConsoleServerPS("sv_disable_immunity_alpha 1");
+		eventlist = Entities.FindByName(null, "event_player_connect");
+	}
+	local userid = eventlist.GetScriptScope().event_data.userid;
+	local name = eventlist.GetScriptScope().event_data.name;
+	local steamid = eventlist.GetScriptScope().event_data.networkid;
+	local p_save = LoadSave(steamid);
+	local p_new = Player(userid,name,steamid);
+
+	if(DODJE_ENABLE)
+	{
+		if(PIDARAS_COUNT > 1 && PIDARAS_COUNT < 5)
+		{
+			if(IsPidaras(steamid))
+			{
+				EntFireByHandle(client_ent, "Command", "disconnect #SFUI_MainMenu_GameBan_Info", RandomFloat(0.0,1.0), p_new.handle, null);
+			}
+		}
+	}
+
+	if(p_save != null)
+	{
+		p_new.money = p_save.money;
+
+		p_new.knife = p_save.knife;
+		p_new.tskin = p_save.tskin;
+		p_new.ctskin = p_save.ctskin;
+
+		p_new.item_buff_radius = p_save.item_buff_radius;
+		p_new.item_buff_last = p_save.item_buff_last;
+		p_new.item_buff_recovery = p_save.item_buff_recovery;
+		p_new.item_buff_turbo = p_save.item_buff_turbo;
+		p_new.item_buff_doble = p_save.item_buff_doble;
+
+		p_new.bio_lvl = p_save. bio_lvl;
+		p_new.ice_lvl = p_save.ice_lvl;
+		p_new.poison_lvl = p_save.poison_lvl;
+		p_new.wind_lvl = p_save.wind_lvl;
+		p_new.summon_lvl = p_save.summon_lvl;
+		p_new.fire_lvl = p_save.fire_lvl;
+		p_new.electro_lvl = p_save.electro_lvl;
+		p_new.earth_lvl = p_save.earth_lvl;
+		p_new.gravity_lvl = p_save.gravity_lvl;
+		p_new.ultimate_lvl = p_save.ultimate_lvl;
+		p_new.heal_lvl = p_save.heal_lvl;
+
+		p_new.perkhp_zm_lvl = p_save.perkhp_zm_lvl;
+		p_new.perkhp_hm_lvl = p_save.perkhp_hm_lvl;
+		p_new.perkhuckster_lvl = p_save.perkhuckster_lvl;
+		p_new.perksteal_lvl = p_save.perksteal_lvl;
+
+		p_new.perkresist_hm_lvl = p_save.perkresist_hm_lvl;
+		p_new.perkspeed_lvl = p_save.perkspeed_lvl;
+		p_new.perkluck_lvl = p_save.perkluck_lvl;
+		p_new.perkchameleon_lvl = p_save.perkchameleon_lvl;
+		p_new.perkresist_zm_lvl = p_save.perkresist_zm_lvl;
+	}
+
+	PLAYERS.push(p_new);
+}
+
+function EventInfo()
+{
+	local userid = eventinfo.GetScriptScope().event_data.userid;
+	if(PLAYERS.len() > 0)
+	{
+		for(local i=0; i < PLAYERS.len(); i++)
+		{
+			if(PLAYERS[i].userid == userid)
+			{
+				PLAYERS[i].handle = TEMP_HANDLE;
+				return;
+			}
+		}
+	}
+
+	//test option
+	//EntFire("client", "command", "Retry", RandomFloat(0.00, 5.00), TEMP_HANDLE)
+	local p = Player(userid,"Reconnect PLS","Reconnect PLS");
+	p.handle = TEMP_HANDLE;
+	if(AUTO_RETRY_ENABLE && client_ent != null && client_ent.IsValid()){EntFireByHandle(client_ent, "Command", "retry", 0.00, TEMP_HANDLE, null);}
+	PLAYERS.push(p);
+}
+//need fix
+function LoadSave(steamid)
+{
+	for(local i = 0; i < PLAYERS_SAVE.len(); i++)
+	{
+		if(PLAYERS_SAVE[i].steamid == steamid)
+		{
+			local data = PLAYERS_SAVE[i];
+			PLAYERS_SAVE.remove(i);
+			return data;
+		}
+	}
+	return null;
+}
+
+function IsPidaras(steamid)
+{
+	for(local a = 0; a < PIDARAS_STEAM_ID.len(); a++)
+	{
+		if(steamid == PIDARAS_STEAM_ID[a])
+		{
+			return true;
+		}
+	}
+	return false;
+}
+
+function ShowPlayerText(handle, text)
+{
+	if(PlayerText == null || PlayerText != null && !PlayerText.IsValid())
+	{
+		PlayerText = Entities.FindByName(null, "playerText");
+	}
+
+	if(PlayerText == null || PlayerText != null && !PlayerText.IsValid())
+		return;
+
+	EntFireByHandle(PlayerText, "SetText", text, 0, handle, handle);
+	EntFireByHandle(PlayerText, "Display", "", 0, handle, handle);
+}
+
+function ShowShopText(handle, text)
+{
+	if(DisableHudHint)
+		return ShowPlayerText(handle, text);
+
+	if(ShopHud == null || ShopHud != null && !ShopHud.IsValid())
+	{
+		ShopHud = Entities.FindByName(null, "hud_shop");
+	}
+
+	if(ShopHud == null || ShopHud != null && !ShopHud.IsValid())
+		return;
+
+	ShopHud.__KeyValueFromString("message",text);
+	EntFireByHandle(ShopHud, "ShowHudHint", "", 0, handle, handle);
+}
+
+function Trigger_Invalid()
+{
+	local waffel_car = Entities.FindByName(null, "waffel_controller");
+    local car_class = waffel_car.GetScriptScope().GetClassByInvalid(activator);
+    if(car_class == null)
+    {
+		if(WAFFEL_CAR_ENABLE && Allow_Waffel)
+		{
+			if(CheckForCar(GetPlayerClassByHandle(activator)) != null)
+				Fade_White(activator);
+			else
+				Fade_Red(activator);
+		}
+		else Fade_Red(activator);
+    }
+    else
+    {
+        waffel_car.GetScriptScope().DestroyCar(activator);
+		Fade_Red(activator);
+    }
+}
+
+function SetInvalid(handle)
+{
+	local invalid_maker = Entities.FindByName(null, ::TEMP_WAFFEL);
+	if(invalid_maker == null)
+		return;
+	local handlepos = handle.GetOrigin();
+	local makerpos = GetSpot();
+
+	invalid_maker.SpawnEntityAtLocation(makerpos, Vector(0,0,0));
+
+	handle.SetOrigin(makerpos + Vector(0, 0, -30))
+	EntFireByHandle(self, "RunScriptCode", "activator.SetOrigin(Vector(" + (handlepos.x) + "," + (handlepos.y) + "," + (handlepos.z) + "));", 0.15, handle, handle);
+}
+
+///////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////
+
+::item <- "item";
+::lvl1 <- "lvl1";
+::lvl2 <- "lvl2";
+::lvl3 <- "lvl3";
+
+::Mes_Warmup <- " \x02 *** \x10 Warmup \x02 ***";
+::RED <- "\x02"
+::GREEN <- "\x04"
+::YELLOW <- "\x09"
+::IDLE <- "IDLE";
+
+::TEMP_BIO <- "item_temp_bio";
+::TEMP_EARTH <- "item_temp_earth";
+::TEMP_ICE <- "item_temp_ice";
+::TEMP_FIRE <- "item_temp_fire";
+::TEMP_SUMMON <- "item_temp_summon";
+::TEMP_ELECTRO <- "item_temp_electro";
+::TEMP_GRAVITY <- "item_temp_gravity";
+::TEMP_HEAL <- "item_temp_heal";
+::TEMP_WIND <- "item_temp_wind";
+::TEMP_ULTIMATE <- "item_temp_ultimate";
+::TEMP_POISON <- "item_temp_poison";
+::TEMP_POTION <- "item_temp_potion";
+::TEMP_AMMO <- "item_temp_ammo";
+::TEMP_PHOENIX <- "item_temp_phoenix";
+::TEMP_WAFFEL <- "waffel_controller_spawner";
+
+
+ServerSettings <-[
+"ammo_50AE_max 6000",
+"ammo_762mm_max 6000",
+"ammo_556mm_box_max 6000",
+"ammo_556mm_max 6000",
+"ammo_338mag_max 6000",
+"ammo_9mm_max 6000",
+"ammo_buckshot_max 6000",
+"ammo_45acp_max 6000",
+"ammo_357sig_max 6000",
+"ammo_57mm_max 6000",
+
+"mp_startmoney 16000",
+"mp_roundtime 18",
+
+"mp_freezetime 1",
+
+"sv_disable_radar 1",
+
+"sv_gravity 800",
+
+//"sv_enablebunnyhopping 1",
+"sv_airaccelerate 18",
+
+"zr_class_modify zombies health_infect_gain 500",
+"zr_class_modify zombies health 7500",
+"zr_class_modify zombies health_regen_interval 0.5",
+"zr_class_modify zombies health_regen_amount 10",
+
+"zr_infect_mzombie_respawn 1",
+
+"zr_infect_spawntime_min 40",
+"zr_infect_spawntime_max 40",
+"ze_infect_time 40",
+
+"zr_ztele_zombie 1",
+"zr_ztele_max_zombie 5",
+"zr_ztele_max_human 1",
+
+"sm_rst_m249 0",
+"sm_rst_negev 0",
+
+"zr_zspawn 1",
+"zr_zspawn_team_zombie 1",
+"zr_zspawn_block_rejoin 0",
+"zr_zspawn_timelimit 0",
+
+"zr_respawn 1",
+"zr_respawn_team_zombie 1",
+"zr_respawn_team_zombie_world 1",
+"zr_respawn_delay 2"];
+
+function SetSettingServer()
+{
+	for (local i=0; i<ServerSettings.len()-1; i++)
+	{
+		SendToConsoleServerPS(ServerSettings[i]);
+	}
+}
+
+function SendToConsoleServerPS(sCommand)
+{
+	EntFire("cmd", "Command", sCommand, 0);
+    SendToConsoleServer(sCommand);
+	//EntFire("cmd", "Command", "sm_cvar " + sCommand, 0);
+}
+
+//teleportitem
+// function SavePos()
+// {
+// 	if(PLAYERS.len() > 0)
+// 	{
+// 		foreach(p in PLAYERS)
+// 		{
+// 			if(p.handle != null)
+// 			{
+// 				if(p.handle.IsValid() && p.handle.GetHealth() > 0)
+// 				{
+// 					if(p.pet != null)
+// 					{
+// 						local pet_index = GetPetIndexByHandle(p.pet);
+// 						local velocity = p.handle.GetVelocity();
+// 						if(velocity.x == 0 && velocity.y == 0 && velocity.z == 0)
+// 						{
+// 							if(p.petstatus != "IDLE" && p.petstatus != "JUMP")
+// 							{
+// 								p.petstatus = "IDLE";
+// 								EntFireByHandle(p.pet, "SetDefaultAnimation", Pet_Preset[pet_index].anim_idle, 0, null, null);
+// 								EntFireByHandle(p.pet, "SetAnimation", Pet_Preset[pet_index].anim_toidle, 0, null, null);
+// 							}
+// 						}
+// 						else
+// 						{
+// 							if(p.petstatus != "RUN" && p.petstatus != "JUMP")
+// 							{
+// 								p.petstatus = "RUN";
+// 								EntFireByHandle(p.pet, "SetDefaultAnimation", Pet_Preset[pet_index].anim_run, 0, null, null);
+// 								EntFireByHandle(p.pet, "SetAnimation", Pet_Preset[pet_index].anim_run, 0, null, null);
+// 							}
+// 						}
+// 					}
+// 				}
+// 			}
+// 		}
+// 	}
+// 	EntFireByHandle(self, "RunScriptCode", "SavePos();", 0.1, null, null);
+// }
+// function Teleport()
+// {
+//     local pl = GetPlayerClassByHandle(activator);
+//     if(pl == null)return;
+//     if(pl.teleporting)return;
+
+//     // local model_name = activator.GetModelName();
+//     // local model = Entities.CreateByClassname("prop_dynamic_glow");
+//     // model.SetModel(model_name);
+//     // model.SetOrigin(activator.GetOrigin());
+//     // model.SetAngles(activator.GetAngles().x,activator.GetAngles().y,activator.GetAngles().z);
+//     // model.__KeyValueFromString("glowenabled","1");
+//     // model.__KeyValueFromString("glowstyle","1");
+//     // model.__KeyValueFromString("glowdist","1024");
+//     // model.__KeyValueFromString("glowcolor","244 0 0");
+
+//     pl.teleporting = true;
+//     local array = pl.lastpos.slice(0,pl.lastpos.len());
+//     local array1 = pl.lastang.slice(0,pl.lastang.len());
+//     pl.lastpos.clear();
+//     pl.lastang.clear();
+//     Revers(array);
+//     Revers(array1);
+//     local i = 0;
+//     local iter = 0.02;
+
+//     for (i; i < array.len() - 1; i++)
+//     {
+//         local time = i * iter;
+//         EntFireByHandle(self, "RunScriptCode", "test1();", time + 0.1, activator, activator);
+//         EntFireByHandle(activator, "RunScriptCode", "self.SetOrigin(Vector("+array[i].x+","+array[i].y+","+array[i].z+"));", time, null, null);
+//         EntFireByHandle(activator, "RunScriptCode", "self.SetAngles("+array1[i].x+","+array1[i].y+","+array1[i].z+");", time, null, null);
+//     }
+//     i++;
+//     EntFireByHandle(self, "RunScriptCode", "GetPlayerClassByHandle(activator).teleporting = false;", i * iter, activator, activator);
+// }
+// function Revers(array)
+// {
+//     local start = 0;
+//     local end = array.len() -1;
+//     while (start < end)
+//     {
+//         local temp = array[start];
+//         array[start] = array[end];
+//         array[end] = temp;
+//         start++;
+//         end--;
+//     }
+//     return array;
+// }
+// function test1()
+// {
+//     local model_name = activator.GetModelName();
+//     local model = Entities.CreateByClassname("prop_dynamic_glow");
+//     model.SetModel(model_name);
+//     model.SetOrigin(activator.GetOrigin());
+//     model.SetAngles(activator.GetAngles().x,activator.GetAngles().y,activator.GetAngles().z);
+//     model.__KeyValueFromString("glowenabled","1");
+//     model.__KeyValueFromString("glowstyle","1");
+//     model.__KeyValueFromString("rendermode","2");
+//     model.__KeyValueFromString("renderamt","225");
+//     EntFireByHandle(model, "Alpha", "120", 0, null, null);
+//     // model.__KeyValueFromString("renderamt","150");
+//     model.__KeyValueFromString("glowdist","1024");
+//     model.__KeyValueFromString("glowcolor","255 0 0");
+
+//     EntFireByHandle(model, "RunScriptCode", "self.Destroy();", 0.1, null, null);
+// }
+
+// function SpawnExplosion(origin,radius,damage,team = -1)
+// {
+//     local sound = Entities.CreateByClassname("ambient_generic");
+//     sound.__KeyValueFromInt("radius",radius * 1.5);
+//     sound.__KeyValueFromString("message","weapons/flashbang/flashbang_explode1.wav");
+//     sound.SetOrigin(origin);
+
+//     local shake = Entities.CreateByClassname("env_shake");
+//     shake.__KeyValueFromInt("radius",radius);
+//     shake.__KeyValueFromString("duration","2");
+//     shake.__KeyValueFromString("frequency","0.25");
+//     shake.__KeyValueFromString("spawnflags","28");
+//     shake.__KeyValueFromString("amplitude","25");
+//     shake.SetOrigin(origin);
+
+//     local sprite = Entities.CreateByClassname("env_sprite");
+//     sprite.__KeyValueFromString("rendermode","5");
+//     sprite.__KeyValueFromString("sprites/zerogxplode.vmt","5");
+//     sprite.SetOrigin(origin);
+
+//     EntFireByHandle(shake, "StartShake", "", 0, null, null);
+//     EntFireByHandle(sound, "PlaySound", "", 0, null, null);
+//     EntFireByHandle(sprite, "ShowSprite", "", 0, null, null);
+//     local h = null;
+//     while(null != (h = Entities.FindByClassnameWithin(h, "player", origin, radius)))
+//     {
+//         if(h != null && h.IsValid() && h.GetHealth() > 0)
+//         {
+//             local hp = h.GetHealth();
+//             hp = hp - damage;
+//             if(hp <= 0)
+//             {
+//                 EntFireByHandle(h, "SetHealth");, 0, null, null);
+//             }
+//             else h.SetHealth(hp);
+//         }
+//     }
+	//EntFireByHandle(shake, "Kill", "", 1, null, null);
+	//EntFireByHandle(sound, "Kill", "", 1, null, null);
+	//EntFireByHandle(sprite, "Kill", "", 1, null, null);
+// }
+
+// function test(i)
+// {
+//     local pet = CreateProp("prop_dynamic", activator.GetOrigin()"models/microrost/cosmov6/ff7r/chokobo.mdl", i);
+// }
+
+// function SetInvalid()
+// {
+//     local pl = GetPlayerClassByHandle(activator);
+//     if(pl != null)
+//     {
+//         pl.invalid = true;
+//     }
+// }
+ITEM_OWNER <- [];
+
+class ItemOwner
+{
+	owner = null;
+	name_right = null;
+	name = null;
+	button = null;
+	weapon = null;
+	glow_weapon = null;
+
+	canUse = true;
+	canSilence = true;
+	allowRegen = true;
+
+	type = 2;
+
+	count = 1;
+	maxcount = 1;
+
+	//1 нажал кд
+	//2 пару юзов
+	//3 несколько юзов кд
+
+	cd = 0;
+
+	lvl = 0;
+
+constructor(_name)
+    {
+        this.button = _name;
+        this.name = _name.GetName().slice(_name.GetPreTemplateName().len(),_name.GetName().len());
+        local item_name = this.button.GetName()
+
+        local item_name_array = split(item_name,"_");
+        local n_item_name = item_name_array[item_name_array.len() - 1];
+        local new_item_name = split(n_item_name,"&");
+        this.name_right = new_item_name[0];
+        this.weapon = Entities.FindByName(null, "item_gun_" + this.name_right + "" + this.name);
+        //EntFireByHandle(this.weapon, "ToggleCanBePickedUp", "", 0.01, null, null);
+        EntFire("item_effect_" + this.name_right + "" + this.name, "Start", "", 0.01, null);
+        if(this.name_right == "poison")
+        {
+            EntFire("item_poison_effect*", "Start", "", 0.01, null);
+        }
+        else if(this.name_right == "phoenix" ||
+        this.name_right == "ammo" ||
+        this.name_right == "potion")
+        {
+            this.allowRegen = false;
+            this.canSilence = false;
+        }
+        else if(this.name_right == "mike")
+        {
+            this.name_right = "Red XIII";
+            this.allowRegen = false;
+            this.type = 1;
+        }
+        else if(this.name_right == "yuffie")
+        {
+            this.name_right = "Yuffie";
+            this.allowRegen = false;
+            this.type = 1;
+        }
+
+        if(ITEM_GLOW)
+        {
+            this.glow_weapon = Entities.CreateByClassname("prop_dynamic_glow");
+            this.glow_weapon.__KeyValueFromInt("solid", 0);
+            this.glow_weapon.__KeyValueFromInt("glowenabled", 1);
+            this.glow_weapon.__KeyValueFromInt("glowdist", 1024);
+            this.glow_weapon.__KeyValueFromInt("glowstyle", 0);
+            this.glow_weapon.__KeyValueFromInt("rendermode", 6);
+
+            this.glow_weapon.SetModel(this.weapon.GetModelName());
+            this.glow_weapon.SetOrigin(this.weapon.GetOrigin());
+            this.glow_weapon.SetAngles(this.weapon.GetAngles().x, this.weapon.GetAngles().y, this.weapon.GetAngles().z);
+        }
+    }
+
+	function NewOwner(_owner)
+	{
+		this.owner = _owner.handle;
+		local item_name = this.button.GetName()
+
+		if(this.glow_weapon != null)
+		{
+			this.glow_weapon.Destroy();
+			this.glow_weapon = null;
+		}
+
+		if(this.name_right == "bio")
+		{
+			this.type = (_owner.item_buff_doble) ? 3 : 1;
+			this.count = (_owner.item_buff_doble) ? 2 : 1;
+			this.maxcount = this.count;
+			this.lvl = _owner.bio_lvl;
+			if (CLASSIC_MOD)
+			{
+				this.lvl = 3;
+			}
+		}
+		else if(this.name_right == "ice")
+		{
+			this.type = (_owner.item_buff_doble) ? 3 : 1;
+			this.count = (_owner.item_buff_doble) ? 2 : 1;
+			this.maxcount = this.count;
+			this.lvl = _owner.ice_lvl;
+			if (CLASSIC_MOD)
+			{
+				this.lvl = 3;
+			}
+		}
+		else if(this.name_right == "poison")
+		{
+			this.type = 3;
+			this.lvl = _owner.poison_lvl;
+			if(this.lvl == 0)
+			{
+				this.lvl++;
+			}
+			if (CLASSIC_MOD)
+			{
+				this.lvl = 3;
+			}
+			this.count = this.lvl + ((_owner.item_buff_doble) ? 2 : 0);
+			this.maxcount = this.count;
+		}
+		else if(this.name_right == "wind")
+		{
+			this.type = (_owner.item_buff_doble) ? 3 : 1;
+			this.count = (_owner.item_buff_doble) ? 2 : 1;
+			this.maxcount = this.count;
+			this.lvl = _owner.wind_lvl;
+			if (CLASSIC_MOD)
+			{
+				this.lvl = 3;
+			}
+		}
+		else if(this.name_right == "summon")
+		{
+			this.type = (_owner.item_buff_doble) ? 3 : 1;
+			this.count = (_owner.item_buff_doble) ? 2 : 1;
+			this.maxcount = this.count;
+			this.lvl = _owner.summon_lvl;
+			if (CLASSIC_MOD)
+			{
+				this.lvl = 3;
+			}
+		}
+		else if(this.name_right == "fire")
+		{
+			this.type = (_owner.item_buff_doble) ? 3 : 1;
+			this.count = (_owner.item_buff_doble) ? 2 : 1;
+			this.maxcount = this.count;
+			this.lvl = _owner.fire_lvl;
+			if (CLASSIC_MOD)
+			{
+				this.lvl = 3;
+			}
+		}
+		else if(this.name_right == "electro")
+		{
+			this.type = 3;
+			this.lvl = _owner.electro_lvl;
+			if(this.lvl == 0)
+			{
+				this.lvl++;
+			}
+			if (CLASSIC_MOD)
+			{
+				this.lvl = 3;
+			}
+			this.count = this.lvl + ((_owner.item_buff_doble) ? 2 : 0);
+			this.maxcount = this.count;
+		}
+		else if(this.name_right == "earth")
+		{
+			this.type = (_owner.item_buff_doble) ? 3 : 1;
+			this.count = (_owner.item_buff_doble) ? 2 : 1;
+			this.maxcount = this.count;
+			this.lvl = _owner.earth_lvl;
+			if (CLASSIC_MOD)
+			{
+				this.lvl = 3;
+			}
+		}
+		else if(this.name_right == "gravity")
+		{
+			this.type = (_owner.item_buff_doble) ? 3 : 1;
+			this.count = (_owner.item_buff_doble) ? 2 : 1;
+			this.maxcount = this.count;
+			this.lvl = _owner.gravity_lvl;
+			if (CLASSIC_MOD)
+			{
+				this.lvl = 3;
+			}
+		}
+		else if(this.name_right == "ultimate")
+		{
+			this.type = 2;
+			this.count = (_owner.item_buff_doble) ? 2 : 1;
+			this.maxcount = this.count;
+			this.lvl = _owner.ultimate_lvl;
+			if (CLASSIC_MOD)
+			{
+				this.lvl = 3;
+			}
+		}
+		else if(this.name_right == "heal")
+		{
+			this.type = (_owner.item_buff_doble) ? 3 : 1;
+			this.count = (_owner.item_buff_doble) ? 2 : 1;
+			this.maxcount = this.count;
+			this.lvl = _owner.heal_lvl;
+			if (CLASSIC_MOD)
+			{
+				this.lvl = 3;
+			}
+		}
+		else if(this.name_right == "Red XIII")
+		{
+			_owner.Add_speed(0.15, true);
+			EntFireByHandle(SpeedMod, "ModifySpeed", (_owner.ReturnSpeed()).tostring(), 0.1, _owner.handle, _owner.handle);
+		}
+
+		if(this.lvl == 0)
+		{
+			this.lvl++;
+		}
+	}
+
+	function Use()
+	{
+		if(this.type == 1)
+		{
+			if(this.count > 0)
+			{
+				this.canUse = false;
+				this.count--;
+				return 1;
+			}
+			return -1;
+		}
+		else if(this.type == 2)
+		{
+			if(this.count > 0)
+			{
+				this.count--;
+				if(this.count <= 0)
+				{
+					this.count = 0;
+					this.canUse = false;
+				}
+				return 2;
+			}
+			return -1;
+		}
+		else if(this.type == 3)
+		{
+			if(this.count > 0)
+			{
+				this.count--;
+				if(this.count <= 0)
+				{
+					this.count = 0;
+					this.canUse = false;
+				}
+				return 3;
+			}
+			return -1;
+		}
+	}
+
+	function RemoveOwner()
+	{
+		if(this.owner != null)
+		{
+			for(local i = 0; i <= 3; i++)
+			{
+				EntFire("item_star"+ i + "_" + this.name_right + "" + this.name, "Alpha", "255", 0, null);
+				EntFire("item_star"+ i + "_" + this.name_right + "" + this.name, "SetGlowDisabled", "", 0, null);
+				EntFire("item_star"+ i + "_" + this.name_right + "" + this.name, "Disable", "", 0, null);
+			}
+
+			if(this.maxcount != 1)
+			{
+				if(this.count < this.maxcount)
+				{
+					EntFireByHandle(this.button, "RunScriptCode", "loc = false;", 0, null, null);
+					EntFireByHandle(this.button, "RunScriptCode", "loc = true;", 80, null, null);
+				}
+			}
+
+			EntFireByHandle(this.weapon, "ToggleCanBePickedUp", "", 0, null, null);
+			EntFireByHandle(this.weapon, "ToggleCanBePickedUp", "", 0.5, null, null);
+
+			if(this.name_right == "Red XIII")
+			{
+				MainScript.GetScriptScope().GetPlayerClassByHandle(owner).Add_speed(-0.1, true);
+				EntFireByHandle(SpeedMod, "ModifySpeed", (_owner.ReturnSpeed()).tostring(), 0.1, _owner.handle, _owner.handle);
+			}
+
+			this.owner = null;
+			if(this.lvl != null)
+				this.lvl = 0;
+			return true;
+		}
+		return false;
+	}
+}
+
+function StartCD(cooldown = 0)
+{
+	local item = GetItemByButton(caller);
+	if(item == null)
+		return;
+
+	if(item.type == 2)
+	{
+		if(item.count == 0)
+		{
+		item.cd = "E";
+		item.canUse = false;
+		return;
+		}
+	}
+	if(cooldown != 0)
+	{
+		item.cd = cooldown;
+		item.canUse = false;
+	}
+	else
+	{
+		item.cd -= 1;
+	}
+	if(item.cd > 0)
+	{
+		EntFireByHandle(self, "RunScriptCode", "StartCD();", 1, caller, caller);
+	}
+	else
+	{
+		if(item.type == 1)
+		{
+			item.count++;
+			if ((item.name_right == "Red XIII" || item.name_right == "Yuffie") &&
+			item.owner != null &&
+			item.owner.IsValid() &&
+			item.owner.GetHealth() > 0 &&
+			item.owner.GetTeam() == 3)
+			{
+				EntFireByHandle(g_hFadeItem, "Fade", "", 0, item.owner, item.owner);
+			}
+		}
+		item.canUse = true;
+	}
+}
+
+function StartCounter(counter)
+{
+	local item = GetItemByButton(caller);
+	if(activator != item.owner)
+		return;
+	if(item.type != 3)
+		return;
+	if(counter > 0)
+	{
+		EntFireByHandle(self, "RunScriptCode", "StartCounter(" + --counter + ");", 1, activator, caller);
+	}
+	else
+	{
+		if(item.type == 3)
+		{
+			item.count++;
+			if (item.maxcount > 1 &&
+			item.owner != null &&
+			item.owner.IsValid() &&
+			item.owner.GetHealth() > 0 &&
+			item.owner.GetTeam() == 3)
+			{
+				EntFireByHandle(g_hFadeItem, "Fade", "", 0, item.owner, item.owner);
+			}
+		}
+	}
+}
+
+function GetItemByOwner(activator)
+{
+	foreach(p in ITEM_OWNER)
+	{
+		if(p.owner == activator)
+		{
+			return p;
+		}
+	}
+	return null;
+}
+
+function GetItemByButton(activator)
+{
+	foreach(p in ITEM_OWNER)
+	{
+		if(p.button == activator)
+		{
+			return p;
+		}
+	}
+	return null;
+}
+
+function GetItemByName(name)
+{
+	foreach(p in ITEM_OWNER)
+	{
+		if(p.name == name)
+		{
+			return p;
+		}
+	}
+	return null;
+}
+
+class Item
+{
+	name = "";
+	effect = "";
+
+	radius1 = 0;
+	radius2 = 0;
+	radius3 = 0;
+
+	duration1 = 0;
+	duration2 = 0;
+	duration3 = 0;
+
+	cd1 = 0;
+	cd2 = 0;
+	cd3 = 0;
+
+	damage1 = 0;
+	damage2 = 0;
+	damage3 = 0;
+
+	time1 = 0;
+	time2 = 0;
+	time3 = 0;
+	constructor(_name,_effect,_radius,_duration,_cd,_damage,_time)
+	{
+		name = _name;
+
+		effect = _effect;
+
+		local array = split(_radius," ");
+		if(array.len() > 0)
+		radius1 = array[0].tofloat();
+		if(array.len() > 1)
+		radius2 = array[1].tofloat();
+		if(array.len() > 2)
+		radius3 = array[2].tofloat();
+
+		array = split(_duration," ");
+		if(array.len() > 0)
+		duration1 = array[0].tofloat();
+		if(array.len() > 1)
+		duration2 = array[1].tofloat();
+		if(array.len() > 2)
+		duration3 = array[2].tofloat();
+
+		array = split(_cd," ");
+		if(array.len() > 0)
+		cd1 = array[0].tofloat();
+		if(array.len() > 1)
+		cd2 = array[1].tofloat();
+		if(array.len() > 2)
+		cd3 = array[2].tofloat();
+
+		array = split(_damage," ");
+		if(array.len() > 0)
+		damage1 = array[0].tofloat();
+		if(array.len() > 1)
+		damage2 = array[1].tofloat();
+		if(array.len() > 2)
+		damage3 = array[2].tofloat();
+
+		array = split(_time," ");
+		if(array.len() > 0)
+		time1 = array[0].tofloat();
+		if(array.len() > 1)
+		time2 = array[1].tofloat();
+		if(array.len() > 2)
+		time3 = array[2].tofloat();
+	}
+	function GetRadius(i)
+	{
+		if(i <= 1)return this.radius1;
+		if(i == 2)return this.radius2;
+		if(i >= 3)return this.radius3;
+	}
+	function GetDuration(i)
+	{
+		if(i <= 1)return this.duration1;
+		if(i == 2)return this.duration2;
+		if(i >= 3)return this.duration3;
+	}
+	function GetCD(i)
+	{
+		if(i <= 1)return this.cd1;
+		if(i == 2)return this.cd2;
+		if(i >= 3)return this.cd3;
+	}
+	function GetDamage(i)
+	{
+		if(i <= 1)return this.damage1;
+		if(i == 2)return this.damage2;
+		if(i >= 3)return this.damage3;
+	}
+	function GetTime(i)
+	{
+		if(i <= 1)return this.time1;
+		if(i == 2)return this.time2;
+		if(i >= 3)return this.time3;
+	}
+}
+
+Item_Preset <- [];
+obj <- null;
+//           name  effect           radius        duration       cd                 damage              time
+obj = Item("bio", "减速并给僵尸向上的升力", "196 320 440", "5 6 7", "80 75 70", "100 200 300", "0.3 0.35 0.4");
+Item_Preset.push(obj) //bio
+obj = Item("ice", "冰冻僵尸", "360 512 600", "5 6 7", "80 75 70","0.85 1.0 1.15","0.5 1 1.5");
+Item_Preset.push(obj) //Ice
+obj = Item("poison","创造一个会在墙体弹射的能量\n碰到僵尸会爆炸并生成烟雾伤害僵尸","360 430 512","5 6 7","0 0 0" ,"500 750 1000","0.5 0.5 0.5");
+Item_Preset.push(obj) //poison
+obj = Item("wind","创造龙卷风推开僵尸","360 512 600","5 6 7","80 75 70","512 768 1024" ,"0.5 0.5 0.5");
+Item_Preset.push(obj) //wind
+obj = Item("summon","召唤一个陆行鸟守护者","360 430 512","20 25 30" ,"80 75 70","512 768 1024" ,"4 5 6");
+Item_Preset.push(obj) //summon
+obj = Item("fire","创造一个火场燃烧僵尸","360 512 600","7 8 9","75 70 65","500 600 700","0.15 0.2 0.25");
+Item_Preset.push(obj) //fire
+obj = Item("electro","创造一个电场减速和伤害僵尸" ,"360 430 512","5 6 7","80 75 70","300 400 500","0.15 0.2 0.25");
+Item_Preset.push(obj) //electro
+obj = Item("earth","创造一个可以被击碎的岩壁" ,"360 512 600","6 7 8","80 75 70","3000 4500 6000","0.5 0.5 0.5");
+Item_Preset.push(obj) //earth
+obj = Item("gravity","创造一个黑暗物质把僵尸吸过去","360 430 512","5 6 7","80 75 70","512 768 1024" ,"0.5 0.5 0.5");
+Item_Preset.push(obj) //gravity
+obj = Item("ultimate","获得一团会爆炸的能量并对僵尸造成大量伤害",	"740 920 1024","15 15 15","80 90 100" ,"80 85 95","500 1000 1500");
+Item_Preset.push(obj) //ultimate
+obj = Item("heal","恢复当前血量到最大生命值并给予一些增益","360 512 600","5 6 7","80 75 70" ,"1 2 3","0.5 0.5 0.5");
+Item_Preset.push(obj) //heal
+obj = Item("potion","恢复当前最大生命值的一半血量","360 512 600","5 6 7","80 75 70" ,"1 2 3","0.5 0.5 0.5");
+Item_Preset.push(obj) //potion
+obj = Item("ammo","提供一些弹药","360 512 600","6 7 8","80 75 70" ,"1 2 3","0.5 0.5 0.5");
+Item_Preset.push(obj) //ammo
+obj = Item("phoenix","给予抵抗所有类型的负面状态","360 512 600","6 7 8","80 75 70" ,"1 2 3","0.5 0.5 0.5");
+Item_Preset.push(obj) //phoenix
+
+///////////////
+//STATS BLOCK//
+///////////////
+::RoundPlayed <- 0;
+
+::ScoreBass <- 0;
+
+::Round_Start_Time <- 0;
+::Round_End_Time <- 0;
+::Map_Start_Time <- 0;
+
+::Stage_Beat_Data <-
+[
+	{name = "Normal", besttime = 0, beat = false, counttobeat = 0}, //Normal
+	{name = "Hard", besttime = 0, beat = false, counttobeat = 0}, //Hard
+	{name = "ZM", besttime = 0, beat = false, counttobeat = 0}, //ZM
+	{name = "Extreme", besttime = 0, beat = false, counttobeat = 0}, //Extreme
+	{name = "Inferno", besttime = 0, beat = false, counttobeat = 0}, //Inferno
+]
+
+::Stage_Beat_Normal_Time <- null;
+::Stage_Beat_Normal_Count <- 0;
+
+::Stage_Beat_Hard_Time <- null;
+::Stage_Beat_Hard_Count <- 0;
+
+::Stage_Beat_ZM_Time <- null;
+::Stage_Beat_ZM_Count <- 0;
+
+::Stage_Beat_Extreme_Time <- null;
+::Stage_Beat_Extreme_Count <- 0;
+
+::Stage_Beat_Inferno_Time <- null;
+::Stage_Beat_Inferno_Count <- 0;
+
+// ::Record_Stage_Beat_Data <- [
+
+// ]
+
+// ::Record_Stage_Beat_Normal_Time <- 9999;
+// ::Record_Stage_Beat_Hard_Time <- 9999;
+// ::Record_Stage_Beat_ZM_Time <- 9999;
+// ::Record_Stage_Beat_Extreme_Time <- 9999;
+// ::Record_Stage_Beat_Inferno_Time <- 9999;
+// ::Record_Map_Beat_Time <- 9999;
+
+// ::Record_Link <- "- - - - - -";
+
+function CountStage() //в начале раунда
+{
+	if (Stage >= 1 && Stage <= 5)
+	{
+		if (!Stage_Beat_Data[Stage-1].beat)
+		{
+			Stage_Beat_Data[Stage-1].counttobeat++;
+		}
+	}
+}
+
+function BeatStage() //До установки
+{
+	Round_End_Time = Time();
+
+	local iTime = Round_End_Time - Round_Start_Time;
+	if (Stage >= 1 && Stage <= 5)
+	{
+		if (!Stage_Beat_Data[Stage-1].beat)
+		{
+			Stage_Beat_Data[Stage-1].beat = true;
+			Stage_Beat_Data[Stage-1].besttime = iTime;
+		}
+		else
+		{
+			if (Stage_Beat_Data[Stage-1].besttime > iTime)
+			{
+				Stage_Beat_Data[Stage-1].besttime = iTime;
+			}
+		}
+	}
+	// local fTime = 120.0;
+	// ::Stage_Beat_Normal_Time = (fTime += RandomInt(0, 180));
+	// ::Stage_Beat_Normal_Count = RandomInt(0, 5);
+
+	// ::Stage_Beat_Hard_Time = (fTime += RandomInt(0, 180));
+	// ::Stage_Beat_Hard_Count = RandomInt(0, 5);
+
+	// ::Stage_Beat_ZM_Time = (fTime += RandomInt(0, 180));
+	// ::Stage_Beat_ZM_Count = RandomInt(0, 5);
+
+	// ::Stage_Beat_Extreme_Time = (fTime += RandomInt(0, 180));
+	// ::Stage_Beat_Extreme_Count = RandomInt(0, 5);
+
+	// ::Stage_Beat_Inferno_Time = (fTime += RandomInt(0, 180));
+	// ::Stage_Beat_Inferno_Count = RandomInt(0, 5);
+
+	local text = "Map Start " + ((Map_Start_Time / 60) % 60).tointeger() + " минут и " + (Map_Start_Time % 60).tointeger() + " секунд";
+	ServerChat(Chat_pref + text)
+
+	if (Stage_Beat_Normal_Time != null)
+	{
+		local Time = Stage_Beat_Normal_Time - Map_Start_Time;
+
+		local text = "Normal mode был пройден за " + ((Time / 60) % 60).tointeger() + " минут и " + (Time % 60).tointeger() + " секунд, с " + Stage_Beat_Normal_Count + " попытки";
+		ServerChat(Chat_pref + text)
+	}
+
+	if (Stage_Beat_Hard_Time != null)
+	{
+		local SumTime = Stage_Beat_Hard_Time - Map_Start_Time;
+		local szTime = "";
+		local szSumTime = "(суммарно за " + ((SumTime / 60) % 60).tointeger() + " минут и " + (SumTime % 60).tointeger() + " секунд)";
+
+		if (Stage_Beat_Normal_Time != null)
+		{
+			SumTime = Stage_Beat_Hard_Time - Stage_Beat_Normal_Time;
+			szTime = "за " +((SumTime / 60) % 60).tointeger() + " минут и " + (SumTime % 60).tointeger() + " секунд";
+		}
+
+		local text = "Hard mode был пройден " + szTime + "" + szSumTime + ", с " + Stage_Beat_Hard_Count + " попытки";
+		ServerChat(Chat_pref + text)
+	}
+
+	if (Stage_Beat_ZM_Time != null)
+	{
+		local SumTime = Stage_Beat_ZM_Time - Map_Start_Time;
+		local szTime = "";
+		local szSumTime = "(суммарно за " +((SumTime / 60) % 60).tointeger() + " минут и " + (SumTime % 60).tointeger() + " секунд)";
+
+		if (Stage_Beat_Hard_Time != null)
+		{
+			SumTime = Stage_Beat_ZM_Time - Stage_Beat_Hard_Time;
+			szTime = "за " +((SumTime / 60) % 60).tointeger() + " минут и " + (SumTime % 60).tointeger() + " секунд";
+		}
+
+		local text = "ZM mode был пройден " + szTime + "" + szSumTime + ", с " + Stage_Beat_ZM_Count + " попытки";
+		ServerChat(Chat_pref + text)
+	}
+
+	if (Stage_Beat_Extreme_Time != null)
+	{
+		local SumTime = Stage_Beat_Extreme_Time - Map_Start_Time;
+		local szTime = "";
+		local szSumTime = "(суммарно за " +((SumTime / 60) % 60).tointeger() + " минут и " + (SumTime % 60).tointeger() + " секунд)";
+
+		if (Stage_Beat_ZM_Time != null)
+		{
+			SumTime = Stage_Beat_Extreme_Time - Stage_Beat_ZM_Time;
+			szTime = "за " +((SumTime / 60) % 60).tointeger() + " минут и " + (SumTime % 60).tointeger() + " секунд";
+		}
+
+		local text = "Extreme mode был пройден " + szTime + "" + szSumTime + ", с " + Stage_Beat_Extreme_Count + " попытки";
+		ServerChat(Chat_pref + text)
+	}
+
+	if (Stage_Beat_Inferno_Time != null)
+	{
+		local SumTime = Stage_Beat_Inferno_Time - Map_Start_Time;
+		local szTime = "";
+		local szSumTime = "(суммарно за " +((SumTime / 60) % 60).tointeger() + " минут и " + (SumTime % 60).tointeger() + " секунд)";
+
+		if (Stage_Beat_Extreme_Time != null)
+		{
+			SumTime = Stage_Beat_Inferno_Time - Stage_Beat_Extreme_Time;
+			szTime = "за " +((SumTime / 60) % 60).tointeger() + " минут и " + (SumTime % 60).tointeger() + " секунд";
+		}
+
+		local text = "Inferno mode был пройден " + szTime + "" + szSumTime + ", с " + Stage_Beat_Inferno_Count + " попытки";
+		ServerChat(Chat_pref + text)
+	}
+}
+
+
+///////////////
+//////Skin/////
+///////////////
+::CT_MODEL <- "models/player/custom_player/legacy/ctm_sas_variantf.mdl";
+::CT_VIP_MODEL <- "models/player/custom_player/legacy/gxp/cosmo/tifa/tifa_v1.mdl";
+::T_VIP_MODEL <- "models/player/custom_player/microrost/sephiroth/sephiroth.mdl";
+::CHICKEN_MODEL <- "models/chicken/chicken.mdl";
+
+self.PrecacheModel(CHICKEN_MODEL);
+self.PrecacheModel(CT_MODEL);
+self.PrecacheModel(CT_VIP_MODEL);
+self.PrecacheModel(T_VIP_MODEL);
+
+function Precache()
+{
+	PreCacheModels();
+}
+
+function PreCacheModels()
+{
+	local structure = null;
+	structure = Pet("0 50 0","models/kmodels/petux1.mdl","","","","","100-255","100-255","100-255","0 0 0","0.6");
+	Pet_Preset.push(structure);
+	structure = Pet("0 -50 0","models/microrost/cosmov6/ff7r/chokobo.mdl","run","idle2","idle","stoprun","0-150","0-150","0-150","-90 270 0","0.5");
+	Pet_Preset.push(structure);
+
+	if(Pet_Preset.len() > 0)
+	{
+		for (local i=0; i<Pet_Preset.len(); i++)
+		{
+			self.PrecacheModel(Pet_Preset[i].model_path);
+		}
+	}
+}
+
+function FastFix()
+{
+    local crates = Entities.CreateByClassname("prop_dynamic");
+    crates.SetModel("models/kmodels/cosmo/props/cs_office/crates_indoor.mdl");
+    crates.SetOrigin(Vector(559, -3921, 135));
+    crates.SetAngles(0, 210, 0);
+    crates.__KeyValueFromString("solid","6");
+}
